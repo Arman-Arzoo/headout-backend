@@ -21,5 +21,6 @@ export class AppController {
   @Get()
   getRoot(): { message: string } {
     return { message: '✅ Backend API is working fine!' };
+    
   }
 }
