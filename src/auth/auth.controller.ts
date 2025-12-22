@@ -1,10 +1,21 @@
-import { Body, Controller, Post, Param, Get, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Param,
+  Get,
+  UseGuards,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from './jwt.guard';
+import { Request, Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -21,7 +32,8 @@ export class AuthController {
   }
 
   @Post('login')
-  login(@Body() body: LoginDto) {
+  login(@Body() body: LoginDto, @Res({ passthrough: true }) res: Response) {
+    res.locals.message = 'Login successful';
     return this.authService.login(body.email, body.password);
   }
 
@@ -49,9 +61,15 @@ export class AuthController {
     return this.authService.resendCode(email);
   }
 
-  @UseGuards(AuthGuard('jwt'))
-  @Get('user/:id')
-  getUserById(@Param('id') id: string) {
-    return this.authService.getUserById(id);
+  @UseGuards(JwtAuthGuard)
+  @Get('user')
+  getUserById(@Req() req: any) {
+    const userId = req.user?.id;
+    return this.authService.getUserById(userId);
+  }
+  @Get('users')
+  getUsers() {
+    return this.authService.getUsers();
   }
 }
+

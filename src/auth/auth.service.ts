@@ -7,6 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { MailerService } from '../mailer/mailer.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -17,10 +18,10 @@ export class AuthService {
   ) {}
 
   private generateToken(
-    user: { id: string; email: string },
+    user: { id: string; email: string, role: Role; },
     rememberMe: boolean,
   ) {
-    const payload = { sub: user.id, email: user.email };
+    const payload = { sub: user.id, email: user.email, role: user.role };
     const expiresIn = rememberMe ? '30d' : '1h'; // 30 days vs 1 hour
 
     return {
@@ -45,7 +46,7 @@ export class AuthService {
       data: { email, password: hashed, name },
     });
 
-    await this.sendEmailVerification(user.id, user.email);
+    // await this.sendEmailVerification(user.id, user.email);
     return this.generateToken(user, rememberMe);
   }
 
@@ -163,6 +164,9 @@ export class AuthService {
   }
 
   async getUserById(id: string) {
+    if(!id){
+      throw new BadRequestException("userId is missing")
+    }
     const user = await this.prisma.user.findUnique({
       where: { id },
       select: {
@@ -179,5 +183,11 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  async getUsers() {
+    const users = await this.prisma.user.findMany();
+
+    return users;
   }
 }

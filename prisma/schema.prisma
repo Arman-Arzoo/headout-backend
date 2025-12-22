@@ -1,12 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  //  output   = "./node_modules/@prisma/client"
 }
 
 datasource db {
@@ -14,17 +7,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+//
+// ─── USER & AUTH MODULE ──────────────────────────────────────────────
+//
+
 model User {
-  id            String  @id @default(cuid())
-  email         String  @unique
+  id            String   @id @default(cuid())
+  email         String   @unique
   password      String
   name          String
-  emailVerified Boolean @default(false)
+  role          Role     @default(USER)
+  emailVerified Boolean  @default(false)
 
+  bookings      Booking[]
+  reviews       Review[]
+  favorites     Favorite[]
+  vendorProfile VendorProfile?
   emailVerificationRequest EmailVerificationRequest?
+  supportTickets SupportTicket[] // ✅ Added opposite relation
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+  VENDOR
 }
 
 model EmailVerificationRequest {
@@ -36,3 +45,163 @@ model EmailVerificationRequest {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+//
+// ─── EXPERIENCE & VENDOR MODULE ─────────────────────────────────────
+//
+
+model Experience {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  location    String
+  city        String
+  country     String
+  category    Category
+  price       Float
+  duration    String?         // e.g., "2 hours"
+  images      String[]        // array of image URLs
+  available   Boolean         @default(true)
+
+  vendorId    String?
+  vendor      VendorProfile?  @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+
+  reviews     Review[]
+  bookings    Booking[]
+  favorites   Favorite[]      // ✅ Added opposite relation
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum Category {
+  ADVENTURE
+  MUSEUM
+  SIGHTSEEING
+  SHOW
+  FOOD
+  OTHER
+}
+
+model VendorProfile {
+  id           String        @id @default(cuid())
+  userId       String        @unique
+  businessName String
+  description  String?
+  phone        String?
+  address      String?
+  verified     Boolean       @default(false)
+  experiences  Experience[]
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//
+// ─── BOOKING & PAYMENT MODULE ───────────────────────────────────────
+//
+
+model Booking {
+  id            String   @id @default(cuid())
+  userId        String
+  experienceId  String
+  date          DateTime
+  numOfPeople   Int
+  totalAmount   Float
+  status        BookingStatus @default(PENDING)
+  paymentId     String?  @unique  // ✅ Marked as unique for 1-to-1 relation
+
+  user        User        @relation(fields: [userId], references: [id])
+  experience  Experience  @relation(fields: [experienceId], references: [id])
+  payment     Payment?    @relation(fields: [paymentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  amount        Float
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  transactionId String?
+  booking       Booking?
+
+  createdAt DateTime @default(now())
+}
+
+enum PaymentMethod {
+  STRIPE
+  PAYPAL
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+//
+// ─── REVIEW & FAVORITES MODULE ──────────────────────────────────────
+//
+
+model Review {
+  id            String   @id @default(cuid())
+  rating        Int      // 1–5 stars
+  comment       String?
+  userId        String
+  experienceId  String
+
+  user        User        @relation(fields: [userId], references: [id])
+  experience  Experience  @relation(fields: [experienceId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Favorite {
+  id            String  @id @default(cuid())
+  userId        String
+  experienceId  String
+
+  user        User        @relation(fields: [userId], references: [id])
+  experience  Experience  @relation(fields: [experienceId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+//
+// ─── SUPPORT MODULE ─────────────────────────────────────────────────
+//
+
+model SupportTicket {
+  id        String        @id @default(cuid())
+  userId    String?
+  subject   String
+  message   String
+  status    TicketStatus  @default(OPEN)
+
+  user      User?         @relation(fields: [userId], references: [id]) // ✅ Valid now
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+
