@@ -56,7 +56,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    return this.generateToken(user, rememberMe);
+    const token = this.generateToken(user, rememberMe);
+
+    return {
+      ...token, user,
+    };
   }
 
   async sendEmailVerification(userId: string, email: string) {
@@ -169,13 +173,7 @@ export class AuthService {
     }
     const user = await this.prisma.user.findUnique({
       where: { id },
-      select: {
-        id: true,
-        email: true,
-        emailVerified: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+    
     });
 
     if (!user) {

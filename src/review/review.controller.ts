@@ -47,4 +47,10 @@ export class ReviewController {
     const userId = req.user.id;
     return await this.reviewService.deleteReview(userId, reviewId);
   }
+
+  // get all reviews
+  @Get('all')
+  async getAllReviews() {
+    return await this.reviewService.getAllReviews();
+  }
 }

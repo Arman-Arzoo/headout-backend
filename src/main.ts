@@ -13,6 +13,7 @@ async function bootstrap() {
       const allowedOrigins = [
         'http://localhost:3000',
         'https://headout.vercel.app',
+        'https://ganzay.com'
       ];
 
       if (!origin || allowedOrigins.includes(origin)) {

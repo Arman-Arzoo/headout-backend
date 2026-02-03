@@ -47,5 +47,16 @@ export class ReviewService {
         return { message: 'Review deleted successfully' };
     }
 
+    // get all reviews
+    async getAllReviews() {
+        return this.prisma.review.findMany({
+            include: {
+                user: true,
+                experience: true,
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
     
 }

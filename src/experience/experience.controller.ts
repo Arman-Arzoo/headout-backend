@@ -31,7 +31,7 @@ export class ExperienceController {
     return this.experienceService.createExperience(dto, userId);
   }
 
-  @Get('')
+  @Get()
   async getAllExperiences() {
     return this.experienceService.getAllExperiences();
   }

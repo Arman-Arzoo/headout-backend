@@ -12,19 +12,19 @@ datasource db {
 //
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
+  id            String  @id @default(cuid())
+  email         String  @unique
   password      String
   name          String
-  role          Role     @default(USER)
-  emailVerified Boolean  @default(false)
+  role          Role    @default(USER)
+  emailVerified Boolean @default(false)
 
-  bookings      Booking[]
-  reviews       Review[]
-  favorites     Favorite[]
-  vendorProfile VendorProfile?
+  bookings                 Booking[]
+  reviews                  Review[]
+  favorites                Favorite[]
+  vendorProfile            VendorProfile?
   emailVerificationRequest EmailVerificationRequest?
-  supportTickets SupportTicket[] // ✅ Added opposite relation
+  supportTickets           SupportTicket[] // ✅ Added opposite relation
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -51,28 +51,122 @@ model EmailVerificationRequest {
 //
 
 model Experience {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  description String
-  location    String
-  city        String
-  country     String
-  category    Category
-  price       Float
-  duration    String?         // e.g., "2 hours"
-  images      String[]        // array of image URLs
-  available   Boolean         @default(true)
+  id                 String   @id @default(cuid())
+  title              String
+  slug               String   @unique
+  description        String
+  location           String
+  city               String
+  country            String
+  category           Category
+  price              Float
+  duration           String? // e.g., "2 hours"
+  images             String[] // array of image URLs
+  available          Boolean  @default(true)
+  cancellationPolicy String
 
-  vendorId    String?
-  vendor      VendorProfile?  @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  latitude  Float?
+  longitude Float?
+  address   String?
 
-  reviews     Review[]
-  bookings    Booking[]
-  favorites   Favorite[]      // ✅ Added opposite relation
+  vendorId String?
+  vendor   VendorProfile? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  reviews   Review[]
+  bookings  Booking[]
+  favorites Favorite[] // ✅ Added opposite relation
+
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  experienceHighlights     ExperienceHighlight[]
+  experienceFeatures       ExperienceFeature[]
+  experienceSections       ExperienceSection[]
+  experienceOperatingHours ExperienceOperatingHour[]
+  experienceInfos          ExperienceInfo[]
+  experienceTicketInfos    ExperienceTicketInfo[]
+  experienceBullets        ExperienceBullets[]
+}
+
+model ExperienceHighlight {
+  id           String  @id @default(cuid())
+  experienceId String
+  icon         String // icon name or url
+  title        String
+  description  String?
+  order        Int
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+}
+
+model ExperienceBullets {
+  id           String @id @default(cuid())
+  experienceId String
+  text         String // array of bullet points
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+}
+
+model ExperienceFeature {
+  id           String      @id @default(cuid())
+  experienceId String
+  text         String
+  type         FeatureType
+  optional     Boolean     @default(false)
+  order        Int
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+}
+
+enum FeatureType {
+  INCLUSION
+  EXCLUSION
+}
+
+model ExperienceSection {
+  id           String  @id @default(cuid())
+  experienceId String
+  title        String?
+  content      String
+  order        Int
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+}
+
+model ExperienceOperatingHour {
+  id           String @id @default(cuid())
+  experienceId String
+  dayOfWeek    Int
+  openTime     String
+  closeTime    String
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+}
+
+model ExperienceInfo {
+  id           String      @id @default(cuid())
+  experienceId String
+  section      InfoSection
+  text         String
+  order        Int
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+}
+
+enum InfoSection {
+  BRING
+  NOT_ALLOWED
+  ACCESSIBILITY
+  ADDITIONAL
+}
+
+model ExperienceTicketInfo {
+  id           String  @id @default(cuid())
+  experienceId String
+  instruction  String
+  address      String?
+  order        Int
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
 }
 
 enum Category {
@@ -85,13 +179,13 @@ enum Category {
 }
 
 model VendorProfile {
-  id           String        @id @default(cuid())
-  userId       String        @unique
+  id           String       @id @default(cuid())
+  userId       String       @unique
   businessName String
   description  String?
   phone        String?
   address      String?
-  verified     Boolean       @default(false)
+  verified     Boolean      @default(false)
   experiences  Experience[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -105,18 +199,18 @@ model VendorProfile {
 //
 
 model Booking {
-  id            String   @id @default(cuid())
-  userId        String
-  experienceId  String
-  date          DateTime
-  numOfPeople   Int
-  totalAmount   Float
-  status        BookingStatus @default(PENDING)
-  paymentId     String?  @unique  // ✅ Marked as unique for 1-to-1 relation
+  id           String        @id @default(cuid())
+  userId       String
+  experienceId String
+  date         DateTime
+  numOfPeople  Int
+  totalAmount  Float
+  status       BookingStatus @default(PENDING)
+  paymentId    String?       @unique // ✅ Marked as unique for 1-to-1 relation
 
-  user        User        @relation(fields: [userId], references: [id])
-  experience  Experience  @relation(fields: [experienceId], references: [id])
-  payment     Payment?    @relation(fields: [paymentId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+  experience Experience @relation(fields: [experienceId], references: [id])
+  payment    Payment?   @relation(fields: [paymentId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -130,7 +224,7 @@ enum BookingStatus {
 }
 
 model Payment {
-  id            String   @id @default(cuid())
+  id            String        @id @default(cuid())
   amount        Float
   method        PaymentMethod
   status        PaymentStatus @default(PENDING)
@@ -157,25 +251,29 @@ enum PaymentStatus {
 //
 
 model Review {
-  id            String   @id @default(cuid())
-  rating        Int      // 1–5 stars
-  comment       String?
-  userId        String
-  experienceId  String
+  id       String   @id @default(cuid())
+  rating   Int
+  comment  String?
+  images   String[]
+  country  String?
+  verified Boolean  @default(true)
 
-  user        User        @relation(fields: [userId], references: [id])
-  experience  Experience  @relation(fields: [experienceId], references: [id])
+  userId       String
+  experienceId String
+
+  user       User       @relation(fields: [userId], references: [id])
+  experience Experience @relation(fields: [experienceId], references: [id])
 
   createdAt DateTime @default(now())
 }
 
 model Favorite {
-  id            String  @id @default(cuid())
-  userId        String
-  experienceId  String
+  id           String @id @default(cuid())
+  userId       String
+  experienceId String
 
-  user        User        @relation(fields: [userId], references: [id])
-  experience  Experience  @relation(fields: [experienceId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+  experience Experience @relation(fields: [experienceId], references: [id])
 
   createdAt DateTime @default(now())
 }
@@ -185,13 +283,13 @@ model Favorite {
 //
 
 model SupportTicket {
-  id        String        @id @default(cuid())
-  userId    String?
-  subject   String
-  message   String
-  status    TicketStatus  @default(OPEN)
+  id      String       @id @default(cuid())
+  userId  String?
+  subject String
+  message String
+  status  TicketStatus @default(OPEN)
 
-  user      User?         @relation(fields: [userId], references: [id]) // ✅ Valid now
+  user User? @relation(fields: [userId], references: [id]) // ✅ Valid now
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -203,5 +301,3 @@ enum TicketStatus {
   RESOLVED
   CLOSED
 }
-
-
