@@ -53,4 +53,12 @@ export class ReviewController {
   async getAllReviews() {
     return await this.reviewService.getAllReviews();
   }
+
+  // get review distribution for an experience
+  @Get('distribution/:experienceId')
+  async getReviewDistribution(
+    @Param('experienceId') experienceId: string,
+  ) {
+    return await this.reviewService.getReviewDistribution(experienceId);
+  }
 }

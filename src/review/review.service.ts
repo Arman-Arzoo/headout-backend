@@ -58,5 +58,76 @@ export class ReviewService {
         });
     }
 
+
+// =====================================================
+// GET REVIEW DISTRIBUTION FOR AN EXPERIENCE
+// =====================================================
+
+async getReviewDistribution(experienceId: string) {
+  const [ratingGrouped, stats, countryGrouped] = await Promise.all([
+    // ⭐ rating distribution
+    this.prisma.review.groupBy({
+      by: ['rating'],
+      where: { experienceId },
+      _count: { rating: true },
+    }),
+
+    // ⭐ total + average
+    this.prisma.review.aggregate({
+      where: { experienceId },
+      _count: true,
+      _avg: { rating: true },
+    }),
+
+    // ⭐ countries
+    this.prisma.review.groupBy({
+      by: ['country'],
+      where: {
+        experienceId,
+        country: { not: null },
+      },
+      _count: { country: true },
+      orderBy: {
+        _count: { country: 'desc' },
+      },
+    }),
+  ]);
+
+  const total = stats._count;
+  const average = Number((stats._avg.rating || 0).toFixed(1));
+
+  // ---------- rating distribution ----------
+  const ratingMap = new Map(
+    ratingGrouped.map(r => [r.rating, r._count.rating])
+  );
+
+  const distribution = [5, 4, 3, 2, 1].map(stars => {
+    const count = ratingMap.get(stars) || 0;
+
+    return {
+      stars,
+      count,
+      percent: total ? Math.round((count / total) * 100) : 0,
+    };
+  });
+
+  // ---------- countries ----------
+  const highlightedCountries = countryGrouped
+    .slice(0, 3)
+    .map(c => c.country);
+
+  const totalCountries = countryGrouped.length;
+
+  // ---------- final response ----------
+  return {
+    average,
+    total,
+    distribution,
+    highlightedCountries,
+    totalCountries,
+  };
+}
+
+
     
 }

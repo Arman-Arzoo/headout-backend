@@ -145,7 +145,10 @@ export class ExperienceService {
     return this.prisma.experience.findMany({
       include: {
         vendor: true,
-        reviews: true,
+        // only for counting purposes
+        reviews: {
+          select: { id: true },
+        },
         
       },
     });
@@ -167,7 +170,10 @@ export class ExperienceService {
         experienceInfos: { orderBy: { order: 'asc' } },
         experienceTicketInfos: { orderBy: { order: 'asc' } },
         experienceBullets: true,
+        // only include 2 latest reviews
         reviews: {
+          orderBy: { createdAt: 'desc' },
+          take: 2,
           include: { user: true },
         },
       },
