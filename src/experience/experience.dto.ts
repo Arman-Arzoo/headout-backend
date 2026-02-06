@@ -121,11 +121,6 @@ export class CreateExperienceDto {
   duration?: string;
 
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  images?: string[];
-
-  @IsOptional()
   @IsBoolean()
   available?: boolean;
 

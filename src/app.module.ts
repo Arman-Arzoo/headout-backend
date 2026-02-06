@@ -9,11 +9,23 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ReviewModule } from './review/review.module';
 import { SupportModule } from './support/support.module';
 import { VendorModule } from './vendor/vendor.module';
+import { MediaModule } from './media/media.module';
 
 @Module({
-  imports: [  ConfigModule.forRoot({
+  imports: [
+    ConfigModule.forRoot({
       isGlobal: true,
-    }),PrismaModule,AuthModule, VendorModule, ExperienceModule, BookingModule, PaymentModule, ReviewModule, FavoriteModule, SupportModule],
-
+    }),
+    PrismaModule,
+    AuthModule,
+    VendorModule,
+    ExperienceModule,
+    BookingModule,
+    PaymentModule,
+    ReviewModule,
+    FavoriteModule,
+    SupportModule,
+    MediaModule
+  ],
 })
 export class AppModule {}

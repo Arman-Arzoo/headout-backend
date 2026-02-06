@@ -28,6 +28,7 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  medias    Media[]
 }
 
 enum Role {
@@ -61,7 +62,6 @@ model Experience {
   category           Category
   price              Float
   duration           String? // e.g., "2 hours"
-  images             String[] // array of image URLs
   available          Boolean  @default(true)
   cancellationPolicy String
 
@@ -300,4 +300,74 @@ enum TicketStatus {
   IN_PROGRESS
   RESOLVED
   CLOSED
+}
+
+// media
+model Media {
+  id     String  @id @default(uuid())
+  userId String?
+
+  key             String // S3
+  type            MediaType
+  size            Int
+  mimeType        String
+  originalName    String
+  source          MediaSource      @default(UPLOADED)
+  sourceStockType MediaEntityType? // if source is STOCK, then specify type
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  mediaLinks MediaLink[]
+
+  @@unique([key])
+  @@index([userId])
+}
+
+model MediaLink {
+  id String @id @default(uuid())
+
+  mediaId String
+  media   Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  entityType MediaEntityType
+  entityId   String
+
+  field   FieldType // icon, attachment, 
+  order   Int? // sorting (gallery)
+  caption String?
+
+  createdAt DateTime @default(now())
+
+
+  @@index([entityType, entityId, field])
+  @@index([mediaId])
+}
+
+enum FieldType {
+  ICON
+  GALLERY
+  ATTACHMENT
+}
+
+enum MediaEntityType {
+  EXPERIENCE
+  VENDOR
+  PROFILE
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  AUDIO
+  OTHER
+}
+
+enum MediaSource {
+  UPLOADED // user uploaded
+  STOCK // system / predefined
+  EXTERNAL // unsplash, cdn, url
 }

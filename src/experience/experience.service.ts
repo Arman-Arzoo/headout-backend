@@ -1,5 +1,3 @@
-
-
 import {
   BadRequestException,
   Injectable,
@@ -8,10 +6,15 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateExperienceDto } from './experience.dto';
 import slugify from 'slugify';
+import { FieldType, MediaEntityType } from '@prisma/client';
+import { MediaResolverService } from 'src/media/mediaResolver.service';
 
 @Injectable()
 export class ExperienceService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mediaResolver: MediaResolverService,
+  ) {}
 
   // =====================================================
   // CREATE EXPERIENCE (FULL DETAIL PAGE SUPPORT)
@@ -48,7 +51,6 @@ export class ExperienceService {
           category: dto.category,
           price: dto.price,
           duration: dto.duration,
-          images: dto.images ?? [],
           cancellationPolicy: dto.cancellationPolicy as string,
           available: dto.available ?? true,
           vendorId: vendor.id,
@@ -68,17 +70,14 @@ export class ExperienceService {
         });
       }
       // ---------- ExperienceBullets ----------
-   if (dto.experienceBullets?.length) {
-  await tx.experienceBullets.createMany({
-    data: dto.experienceBullets.map((bullet) => ({
-      text: bullet,
-      experienceId: experience.id,
-    })),
-  });
-}
-
-
-     
+      if (dto.experienceBullets?.length) {
+        await tx.experienceBullets.createMany({
+          data: dto.experienceBullets.map((bullet) => ({
+            text: bullet,
+            experienceId: experience.id,
+          })),
+        });
+      }
 
       // ---------- Features ----------
       if (dto.features?.length) {
@@ -142,16 +141,29 @@ export class ExperienceService {
   // GET ALL EXPERIENCES
   // =====================================================
   async getAllExperiences() {
-    return this.prisma.experience.findMany({
+    const experiences = await this.prisma.experience.findMany({
       include: {
         vendor: true,
-        // only for counting purposes
         reviews: {
           select: { id: true },
         },
-        
       },
     });
+
+    const ids = experiences.map((e) => e.id);
+
+    // ⭐ fetch all gallery media in ONE query (fast)
+    const galleryMap = await this.mediaResolver.resolveManyForManyEntities(
+      MediaEntityType.EXPERIENCE,
+      ids,
+      FieldType.GALLERY,
+    );
+
+    // ⭐ attach media to each experience
+    return experiences.map((exp) => ({
+      ...exp,
+      gallery: galleryMap.get(exp.id) ?? [],
+    }));
   }
 
   // =====================================================
@@ -162,7 +174,6 @@ export class ExperienceService {
       where: { slug },
       include: {
         vendor: true,
-        // highlights: { orderBy: { order: 'asc' } },
         experienceHighlights: { orderBy: { order: 'asc' } },
         experienceFeatures: { orderBy: { order: 'asc' } },
         experienceSections: { orderBy: { order: 'asc' } },
@@ -170,7 +181,6 @@ export class ExperienceService {
         experienceInfos: { orderBy: { order: 'asc' } },
         experienceTicketInfos: { orderBy: { order: 'asc' } },
         experienceBullets: true,
-        // only include 2 latest reviews
         reviews: {
           orderBy: { createdAt: 'desc' },
           take: 2,
@@ -183,59 +193,86 @@ export class ExperienceService {
       throw new NotFoundException('Experience not found');
     }
 
-    return experience;
+    /* ------------------------------------------
+     Resolve media
+  ------------------------------------------- */
+
+    const [icon, gallery, attachments] = await Promise.all([
+      this.mediaResolver.resolveSingle(
+        MediaEntityType.EXPERIENCE,
+        experience.id,
+        FieldType.ICON,
+      ),
+
+      this.mediaResolver.resolveManyForSingleEntity(
+        MediaEntityType.EXPERIENCE,
+        experience.id,
+        FieldType.GALLERY,
+      ),
+
+      this.mediaResolver.resolveManyForSingleEntity(
+        MediaEntityType.EXPERIENCE,
+        experience.id,
+        FieldType.ATTACHMENT,
+      ),
+    ]);
+
+    return {
+      ...experience,
+      icon,
+      gallery,
+      attachments,
+    };
   }
 
   // =====================================================
   // UPDATE EXPERIENCE (replace children)
   // =====================================================
- async updateExperience(id: string, dto: Partial<CreateExperienceDto>) {
-  const slug = dto.title
-    ? slugify(dto.title, { lower: true, strict: true })
-    : undefined;
+  async updateExperience(id: string, dto: Partial<CreateExperienceDto>) {
+    const slug = dto.title
+      ? slugify(dto.title, { lower: true, strict: true })
+      : undefined;
 
-  return this.prisma.$transaction(async (tx) => {
-    const {
-      highlights,
-      features,
-      sections,
-      operatingHours,
-      infos,
-      ticketInfos,
-      experienceBullets,
-      ...scalarData
-    } = dto;
+    return this.prisma.$transaction(async (tx) => {
+      const {
+        highlights,
+        features,
+        sections,
+        operatingHours,
+        infos,
+        ticketInfos,
+        experienceBullets,
+        ...scalarData
+      } = dto;
 
-    const updated = await tx.experience.update({
-      where: { id },
-      data: {
-        ...scalarData,
-        ...(slug && { slug }),
-      },
+      const updated = await tx.experience.update({
+        where: { id },
+        data: {
+          ...scalarData,
+          ...(slug && { slug }),
+        },
+      });
+
+      // delete relations
+      await Promise.all([
+        tx.experienceHighlight.deleteMany({ where: { experienceId: id } }),
+        tx.experienceFeature.deleteMany({ where: { experienceId: id } }),
+        tx.experienceSection.deleteMany({ where: { experienceId: id } }),
+        tx.experienceOperatingHour.deleteMany({ where: { experienceId: id } }),
+        tx.experienceInfo.deleteMany({ where: { experienceId: id } }),
+        tx.experienceTicketInfo.deleteMany({ where: { experienceId: id } }),
+        tx.experienceBullets.deleteMany({ where: { experienceId: id } }),
+      ]);
+
+      // recreate relations
+      await this.createExperience(
+        { ...updated, ...dto } as any,
+        updated.vendorId as string,
+      );
+
+      return updated;
     });
-
-    // delete relations
-    await Promise.all([
-      tx.experienceHighlight.deleteMany({ where: { experienceId: id } }),
-      tx.experienceFeature.deleteMany({ where: { experienceId: id } }),
-      tx.experienceSection.deleteMany({ where: { experienceId: id } }),
-      tx.experienceOperatingHour.deleteMany({ where: { experienceId: id } }),
-      tx.experienceInfo.deleteMany({ where: { experienceId: id } }),
-      tx.experienceTicketInfo.deleteMany({ where: { experienceId: id } }),
-      tx.experienceBullets.deleteMany({ where: { experienceId: id } }),
-    ]);
-
-    
-    // recreate relations
-    await this.createExperience(
-      { ...updated, ...dto } as any,
-      updated.vendorId as string,
-    );
-
-    return updated;
-  });
-}
-
+  }
 
   // =====================================================
   // DELETE EXPERIENCE
