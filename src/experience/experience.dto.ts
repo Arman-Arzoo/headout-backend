@@ -1,4 +1,4 @@
-import { Category, FeatureType, InfoSection } from '@prisma/client';
+import { FeatureType, InfoSection } from '@prisma/client';
 import {
   IsBoolean,
   IsEnum,
@@ -58,7 +58,7 @@ export class SectionDto {
 // ---------- Operating Hours ----------
 export class OperatingHourDto {
   @IsInt()
-  dayOfWeek: number; // 0–6
+  dayOfWeek: number;
 
   @IsString()
   openTime: string;
@@ -88,7 +88,7 @@ export class TicketInfoDto {
 
 //
 // ======================================================
-// MAIN CREATE EXPERIENCE DTO
+// MAIN CREATE EXPERIENCE DTO (UPDATED)
 // ======================================================
 //
 
@@ -110,9 +110,6 @@ export class CreateExperienceDto {
   @IsString()
   country: string;
 
-  @IsEnum(Category)
-  category: Category;
-
   @IsNumber()
   price: number;
 
@@ -123,6 +120,21 @@ export class CreateExperienceDto {
   @IsOptional()
   @IsBoolean()
   available?: boolean;
+
+  // ---------------- Relations (NEW ⭐) ----------------
+
+  @IsString()
+  categoryId: string;
+
+  @IsOptional()
+  @IsString()
+  subCategoryId?: string;
+
+  // ✅ themes (many-to-many)
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  themeIds?: string[];
 
   // ---------------- Map ----------------
 
@@ -151,7 +163,8 @@ export class CreateExperienceDto {
   @Type(() => HighlightDto)
   highlights?: HighlightDto[];
 
-  // -------------- ExperienceBullets ----------------
+  // ---------------- Bullets ----------------
+
   @IsOptional()
   @IsArray()
   @IsString({ each: true })

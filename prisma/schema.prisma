@@ -52,18 +52,19 @@ model EmailVerificationRequest {
 //
 
 model Experience {
-  id                 String   @id @default(cuid())
+  id                 String  @id @default(cuid())
   title              String
-  slug               String   @unique
+  slug               String  @unique
   description        String
   location           String
   city               String
   country            String
-  category           Category
   price              Float
   duration           String? // e.g., "2 hours"
-  available          Boolean  @default(true)
+  available          Boolean @default(true)
   cancellationPolicy String
+
+  videoUrl          String?
 
   latitude  Float?
   longitude Float?
@@ -85,6 +86,15 @@ model Experience {
   experienceInfos          ExperienceInfo[]
   experienceTicketInfos    ExperienceTicketInfo[]
   experienceBullets        ExperienceBullets[]
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+
+  subCategoryId String?
+  subCategory   SubCategory? @relation(fields: [subCategoryId], references: [id])
+
+  themes ExperienceTheme[]
 }
 
 model ExperienceHighlight {
@@ -169,13 +179,43 @@ model ExperienceTicketInfo {
   experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
 }
 
-enum Category {
-  ADVENTURE
-  MUSEUM
-  SIGHTSEEING
-  SHOW
-  FOOD
-  OTHER
+// theme
+model ThemeTab {
+  id    String @id @default(cuid())
+  name  String @unique // Tickets, Tours, Food
+  order Int    @default(0)
+
+  themes Theme[]
+
+  createdAt DateTime @default(now())
+}
+
+model Theme {
+  id    String  @id @default(cuid())
+  name  String
+  icon  String? // emoji or icon name
+  slug  String  @unique
+  order Int     @default(0)
+
+  tabId       String
+  tab         ThemeTab          @relation(fields: [tabId], references: [id], onDelete: Cascade)
+  experiences ExperienceTheme[]
+
+  createdAt DateTime @default(now())
+
+  
+}
+
+model ExperienceTheme {
+  id String @id @default(cuid())
+
+  experienceId String
+  themeId      String
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  theme      Theme      @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@unique([experienceId, themeId])
 }
 
 model VendorProfile {
@@ -341,7 +381,6 @@ model MediaLink {
 
   createdAt DateTime @default(now())
 
-
   @@index([entityType, entityId, field])
   @@index([mediaId])
 }
@@ -370,4 +409,37 @@ enum MediaSource {
   UPLOADED // user uploaded
   STOCK // system / predefined
   EXTERNAL // unsplash, cdn, url
+}
+
+// category
+model Category {
+  id    String  @id @default(cuid())
+  name  String
+  slug  String  @unique
+  icon  String?
+  order Int     @default(0)
+  experiences Experience[]
+
+  subCategories SubCategory[]
+
+  createdAt DateTime @default(now())
+
+  @@index([order])
+}
+
+model SubCategory {
+  id    String @id @default(cuid())
+  name  String
+  slug  String
+  order Int    @default(0)
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  experiences Experience[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([slug, categoryId])
+  @@index([categoryId])
 }

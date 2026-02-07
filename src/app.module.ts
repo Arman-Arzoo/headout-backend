@@ -10,6 +10,8 @@ import { ReviewModule } from './review/review.module';
 import { SupportModule } from './support/support.module';
 import { VendorModule } from './vendor/vendor.module';
 import { MediaModule } from './media/media.module';
+import { ThemeModule } from './theme/theme.module';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [
@@ -25,7 +27,9 @@ import { MediaModule } from './media/media.module';
     ReviewModule,
     FavoriteModule,
     SupportModule,
-    MediaModule
+    MediaModule,
+    ThemeModule,
+    CategoryModule
   ],
 })
 export class AppModule {}

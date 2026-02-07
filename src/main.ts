@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { TransformInterceptor } from './shared/interceptors/transform.interceptor';
 import { PrismaExceptionFilter } from './shared/filters/prisma-exception.filter';
+import { GlobalExceptionFilter } from './shared/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,7 +14,7 @@ async function bootstrap() {
       const allowedOrigins = [
         'http://localhost:3000',
         'https://headout.vercel.app',
-        'https://ganzay.com'
+        'https://ganzay.com',
       ];
 
       if (!origin || allowedOrigins.includes(origin)) {
@@ -36,10 +37,13 @@ async function bootstrap() {
     }),
   );
 
-    // Global response transformer
+  // Global response transformer
   app.useGlobalInterceptors(new TransformInterceptor());
   // exception
-  app.useGlobalFilters(new PrismaExceptionFilter());
+  app.useGlobalFilters(
+    new PrismaExceptionFilter(),
+    new GlobalExceptionFilter(),
+  );
 
   await app.listen(process.env.PORT ?? 8080);
 }
