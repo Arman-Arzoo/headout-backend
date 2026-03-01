@@ -52,19 +52,19 @@ model EmailVerificationRequest {
 //
 
 model Experience {
-  id                 String  @id @default(cuid())
+  id                 String              @id @default(cuid())
   title              String
-  slug               String  @unique
+  slug               String              @unique
   description        String
   location           String
   city               String
   country            String
-  price              Float
+  pricings           ExperiencePricing[]
   duration           String? // e.g., "2 hours"
-  available          Boolean @default(true)
+  available          Boolean             @default(true)
   cancellationPolicy String
 
-  videoUrl          String?
+  videoUrl String?
 
   latitude  Float?
   longitude Float?
@@ -90,11 +90,25 @@ model Experience {
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
 
-
   subCategoryId String?
   subCategory   SubCategory? @relation(fields: [subCategoryId], references: [id])
 
   themes ExperienceTheme[]
+  status ExperienceStatus  @default(DRAFT)
+
+  deletedAt                DateTime?
+  experienceAvailabilities ExperienceAvailability[]
+
+  @@index([city])
+  @@index([country])
+  @@index([available])
+  @@index([vendorId])
+}
+
+enum ExperienceStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
 
 model ExperienceHighlight {
@@ -179,6 +193,23 @@ model ExperienceTicketInfo {
   experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
 }
 
+model ExperienceAvailability {
+  id           String @id @default(cuid())
+  experienceId String
+
+  date DateTime
+
+  isBlocked Boolean @default(false)
+
+  capacityOverride Int?
+
+  reason String?
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+
+  @@index([experienceId, date])
+}
+
 // theme
 model ThemeTab {
   id    String @id @default(cuid())
@@ -202,8 +233,6 @@ model Theme {
   experiences ExperienceTheme[]
 
   createdAt DateTime @default(now())
-
-  
 }
 
 model ExperienceTheme {
@@ -239,21 +268,41 @@ model VendorProfile {
 //
 
 model Booking {
-  id           String        @id @default(cuid())
+  id           String @id @default(cuid())
   userId       String
   experienceId String
-  date         DateTime
-  numOfPeople  Int
-  totalAmount  Float
-  status       BookingStatus @default(PENDING)
-  paymentId    String?       @unique // ✅ Marked as unique for 1-to-1 relation
 
-  user       User       @relation(fields: [userId], references: [id])
-  experience Experience @relation(fields: [experienceId], references: [id])
-  payment    Payment?   @relation(fields: [paymentId], references: [id])
+  pricingId String?
+
+  date DateTime
+
+  startTime String?
+  endTime   String?
+
+  participants Int
+
+  pricingType  PricingType?
+  pricePerUnit Float
+  totalAmount  Float
+
+  currency String @default("USD")
+
+  status BookingStatus @default(PENDING)
+
+  paymentId String? @unique
+
+  user       User               @relation(fields: [userId], references: [id])
+  experience Experience         @relation(fields: [experienceId], references: [id])
+  pricing    ExperiencePricing? @relation(fields: [pricingId], references: [id])
+
+  payment Payment? @relation(fields: [paymentId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([experienceId])
+  @@index([date])
 }
 
 enum BookingStatus {
@@ -264,12 +313,21 @@ enum BookingStatus {
 }
 
 model Payment {
-  id            String        @id @default(cuid())
-  amount        Float
-  method        PaymentMethod
-  status        PaymentStatus @default(PENDING)
+  id String @id @default(cuid())
+
+  amount   Float
+  currency String @default("USD")
+
+  method   PaymentMethod
+  provider String? // stripe, paypal
+
+  status PaymentStatus @default(PENDING)
+
   transactionId String?
-  booking       Booking?
+
+  metadata Json?
+
+  booking Booking?
 
   createdAt DateTime @default(now())
 }
@@ -305,6 +363,9 @@ model Review {
   experience Experience @relation(fields: [experienceId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@index([experienceId])
+  @@index([userId])
 }
 
 model Favorite {
@@ -316,6 +377,8 @@ model Favorite {
   experience Experience @relation(fields: [experienceId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@unique([userId, experienceId])
 }
 
 //
@@ -413,11 +476,11 @@ enum MediaSource {
 
 // category
 model Category {
-  id    String  @id @default(cuid())
-  name  String
-  slug  String  @unique
-  icon  String?
-  order Int     @default(0)
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  icon        String?
+  order       Int          @default(0)
   experiences Experience[]
 
   subCategories SubCategory[]
@@ -442,4 +505,68 @@ model SubCategory {
 
   @@unique([slug, categoryId])
   @@index([categoryId])
+}
+
+// pricing
+enum PricingType {
+  PER_PERSON
+  PER_GROUP
+  HOURLY
+  DAILY
+}
+
+model ExperiencePricing {
+  id           String      @id @default(cuid())
+  experienceId String
+  type         PricingType
+
+  name String? // Adult, Child, VIP, Private
+
+  currency String @default("USD")
+
+  basePrice Float?
+
+  // capacity rules
+  minParticipants Int?
+  maxParticipants Int?
+
+  // group
+  maxPeople Int?
+
+  active Boolean @default(true)
+
+  validFrom DateTime?
+  validTo   DateTime?
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+
+  slots PricingSlot[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  bookings  Booking[]
+
+  @@index([experienceId])
+  @@index([active])
+}
+
+model PricingSlot {
+  id        String @id @default(cuid())
+  pricingId String
+
+  date DateTime? // specific date override
+
+  dayOfWeek Int? // recurring rule
+
+  startTime String?
+  endTime   String?
+
+  price Float
+
+  capacity Int? // seats available
+
+  pricing ExperiencePricing @relation(fields: [pricingId], references: [id], onDelete: Cascade)
+
+  @@index([pricingId])
+  @@index([date])
 }

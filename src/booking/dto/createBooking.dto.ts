@@ -1,28 +1,31 @@
-import { IsDateString, IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
-import { BookingStatus } from '@prisma/client';
+import {
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class CreateBookingDto {
-
-
   @IsString()
   experienceId: string;
 
-  @IsDateString()
-  date: string; // ISO date format
+  @IsString()
+  pricingId: string;
 
   @IsNumber()
   @Min(1)
-  numOfPeople: number;
+  participants: number;
 
-  @IsNumber()
-  @IsOptional()
-  totalAmount?: number;
+  @IsDateString()
+  date: string; // ISO date
 
-  @IsEnum(BookingStatus)
+  // For HOURLY bookings
+  @IsString()
   @IsOptional()
-  status?: BookingStatus;
+  startTime?: string;
 
   @IsString()
   @IsOptional()
-  paymentId?: string;
+  endTime?: string;
 }

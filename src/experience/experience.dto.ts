@@ -1,4 +1,4 @@
-import { FeatureType, InfoSection } from '@prisma/client';
+import { FeatureType, InfoSection, PricingType } from '@prisma/client';
 import {
   IsBoolean,
   IsEnum,
@@ -10,8 +10,10 @@ import {
   IsInt,
   IsLatitude,
   IsLongitude,
+  IsDateString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import e from 'express';
 
 //
 // ======================================================
@@ -86,6 +88,76 @@ export class TicketInfoDto {
   address?: string;
 }
 
+// ---------- Pricing ----------
+export class CreatePricingDto {
+  @IsEnum(PricingType)
+  type: PricingType;
+
+  @IsString()
+  name: string;
+
+  @IsNumber()
+  price: number;
+
+  @IsOptional()
+  @IsString()
+  currency?: string;
+
+  @IsOptional()
+  @IsInt()
+  minParticipants?: number;
+
+  @IsOptional()
+  @IsInt()
+  maxParticipants?: number;
+
+  @IsOptional()
+  @IsInt()
+  maxPeople?: number;
+
+  @IsOptional()
+  @IsDateString()
+  validFrom?: string;
+
+  @IsOptional()
+  @IsDateString()
+  validTo?: string;
+
+
+  @IsOptional()
+  @IsNumber()
+  basePrice?: number;
+
+  @ValidateNested({ each: true })
+  @Type(() => CreatePricingSlotDto)
+  slots?: CreatePricingSlotDto[];
+}
+
+export class CreatePricingSlotDto {
+  @IsOptional()
+  @IsDateString()
+  date?: string;
+
+  @IsOptional()
+  @IsInt()
+  dayOfWeek?: number;
+
+  @IsOptional()
+  @IsString()
+  startTime?: string;
+
+  @IsOptional()
+  @IsString()
+  endTime?: string;
+
+  @IsNumber()
+  price: number;
+
+  @IsOptional()
+  @IsInt()
+  capacity?: number;
+}
+
 //
 // ======================================================
 // MAIN CREATE EXPERIENCE DTO (UPDATED)
@@ -110,8 +182,8 @@ export class CreateExperienceDto {
   @IsString()
   country: string;
 
-  @IsNumber()
-  price: number;
+  // @IsNumber()
+  // price: number;
 
   @IsOptional()
   @IsString()
@@ -120,6 +192,10 @@ export class CreateExperienceDto {
   @IsOptional()
   @IsBoolean()
   available?: boolean;
+
+  @ValidateNested({ each: true })
+  @Type(() => CreatePricingDto)
+  pricings: CreatePricingDto[];
 
   // ---------------- Relations (NEW ⭐) ----------------
 
