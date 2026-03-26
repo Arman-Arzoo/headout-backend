@@ -93,11 +93,11 @@ export class CreatePricingDto {
   @IsEnum(PricingType)
   type: PricingType;
 
-  @IsString()
-  name: string;
-
-  @IsNumber()
-  price: number;
+  @IsOptional()
+@IsString()
+name?: string;
+  // @IsNumber()
+  // price: number;
 
   @IsOptional()
   @IsString()

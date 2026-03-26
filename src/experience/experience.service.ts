@@ -207,18 +207,18 @@ export class ExperienceService {
           const createdPricing = await tx.experiencePricing.create({
             data: {
               experienceId: expId,
-              type: pricing.type,
-              name: pricing.name,
-              currency: pricing.currency ?? 'USD',
+              type: pricing?.type,
+              name: pricing?.name || 'default',
+              currency: pricing?.currency ?? 'USD',
 
-              basePrice: pricing.basePrice,
+              basePrice: pricing?.basePrice ?? 0,
 
-              minParticipants: pricing.minParticipants,
-              maxParticipants: pricing.maxParticipants,
-              maxPeople: pricing.maxPeople,
+              minParticipants: pricing?.minParticipants ?? 0,
+              maxParticipants: pricing?.maxParticipants ?? 0,
+              maxPeople: pricing?.maxPeople ?? 0,
 
-              validFrom: pricing.validFrom,
-              validTo: pricing.validTo,
+              validFrom: pricing?.validFrom,
+              validTo: pricing?.validTo,
             },
           });
 
