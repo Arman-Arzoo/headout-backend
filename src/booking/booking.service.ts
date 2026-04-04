@@ -151,7 +151,7 @@ export class BookingService {
         pricePerUnit = slot.price;
 
         // ================= CAPACITY CHECK
-        const capacity = override?.capacityOverride ?? slot.capacity;
+        const capacity = override?.bookingCapacitySnapshot ?? slot.capacity;
 
         if (capacity) {
           const existing = await tx.booking.aggregate({
@@ -214,8 +214,8 @@ export class BookingService {
           participants,
 
           pricingType: pricing.type,
-          pricePerUnit,
-          totalAmount,
+          pricingSnapshot: JSON.stringify(pricing),
+          finalAmount: totalAmount,
           currency: pricing.currency,
 
           status: 'PENDING',
@@ -265,7 +265,7 @@ export class BookingService {
       include: {
         user: true,
         experience: true,
-        payment: true,
+        // payment: true,
       },
       orderBy: { createdAt: 'desc' },
     });

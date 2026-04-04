@@ -1,9 +1,10 @@
+import { VerificationStatus } from '@prisma/client';
 import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class CreateVendorProfileDto {
- 
   @IsString()
-  businessName: string;
+  businessName!: string;
+
   @IsString()
   @IsOptional()
   description?: string;
@@ -13,8 +14,7 @@ export class CreateVendorProfileDto {
   @IsString()
   @IsOptional()
   address?: string;
-  @IsBoolean()
+  
   @IsOptional()
-  verified?: boolean;
+  verified?: VerificationStatus;
 }
-

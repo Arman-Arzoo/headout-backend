@@ -8,6 +8,34 @@ export class VendorService {
 
   //   create
   async create(userId: string, dto: CreateVendorProfileDto) {
+
+    // check user ROle is VENDOR
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+    if (user?.role !== 'VENDOR') {
+      // make him vendor if not already
+      await this.prisma.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          role: 'VENDOR',
+        },
+      });
+    }
+
+    // check user is not already a vendor
+    const existing = await this.prisma.vendorProfile.findUnique({
+      where: {
+        userId: userId,
+      },
+    });
+    if (existing) {
+      throw new Error('User already has a vendor profile');
+    }
     const vendor = await this.prisma.vendorProfile.create({
       data: {
         userId: userId,
@@ -15,7 +43,7 @@ export class VendorService {
         description: dto.description,
         phone: dto.phone,
         address: dto.address,
-        verified: dto.verified,
+        verificationStatus: dto.verified,
       },
     });
     return vendor;

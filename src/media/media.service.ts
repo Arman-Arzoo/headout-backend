@@ -174,6 +174,7 @@ export class MediaService {
           return tx.mediaLink.create({
             data: {
               mediaId,
+              url: await this.s3Service.getSignedUrl(media.key),
               entityType,
               entityId,
               field,
@@ -189,6 +190,7 @@ export class MediaService {
       return await this.prisma.mediaLink.create({
         data: {
           mediaId,
+          url: await this.s3Service.getSignedUrl(media.key),  
           entityType,
           entityId,
           field,
@@ -240,10 +242,13 @@ export class MediaService {
       sourceStockType,
     );
 
-    const assetsWithIcons = stockMedia.map((asset) => ({
-      ...asset,
-      icon: iconMap.get('stock') ?? null,
-    }));
+    const assetsWithIcons = await Promise.all(
+      stockMedia.map(async (asset) => ({
+        ...asset,
+        icon: iconMap.get('stock') ?? null,
+        url: await this.s3Service.getSignedUrl(asset.key),
+      })),
+    );
     return assetsWithIcons;
   }
 }

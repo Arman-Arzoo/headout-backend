@@ -26,9 +26,11 @@ model User {
   emailVerificationRequest EmailVerificationRequest?
   supportTickets           SupportTicket[] // ✅ Added opposite relation
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  medias    Media[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+  medias       Media[]
+  reservations Reservation[]
 }
 
 enum Role {
@@ -96,13 +98,18 @@ model Experience {
   themes ExperienceTheme[]
   status ExperienceStatus  @default(DRAFT)
 
-  deletedAt                DateTime?
-  experienceAvailabilities ExperienceAvailability[]
+  deletedAt      DateTime?
+  availabilities ExperienceAvailability[]
+  reservations   Reservation[]
 
   @@index([city])
   @@index([country])
   @@index([available])
   @@index([vendorId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([slug])
+  @@index([title])
 }
 
 enum ExperienceStatus {
@@ -201,9 +208,11 @@ model ExperienceAvailability {
 
   isBlocked Boolean @default(false)
 
-  capacityOverride Int?
+  bookingCapacitySnapshot Int?
 
-  reason String?
+  reason    String?
+  startTime DateTime?
+  endTime   DateTime?
 
   experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
 
@@ -248,19 +257,26 @@ model ExperienceTheme {
 }
 
 model VendorProfile {
-  id           String       @id @default(cuid())
-  userId       String       @unique
-  businessName String
-  description  String?
-  phone        String?
-  address      String?
-  verified     Boolean      @default(false)
-  experiences  Experience[]
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  businessName       String
+  description        String?
+  phone              String?
+  address            String?
+  verificationStatus VerificationStatus @default(PENDING)
+  experiences        Experience[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
 }
 
 //
@@ -281,28 +297,55 @@ model Booking {
 
   participants Int
 
-  pricingType  PricingType?
-  pricePerUnit Float
-  totalAmount  Float
+  pricingType     PricingType?
+  // pricePerUnit Float
+  // totalAmount  Float
+  pricingSnapshot Json // store pricing details at the time of booking
 
-  currency String @default("USD")
+  currency     String // ISO code
+  exchangeRate Float?
 
   status BookingStatus @default(PENDING)
 
-  paymentId String? @unique
+  capacityOverride Int?
+
+  // paymentId String? @unique
+  payments Payment[]
 
   user       User               @relation(fields: [userId], references: [id])
   experience Experience         @relation(fields: [experienceId], references: [id])
   pricing    ExperiencePricing? @relation(fields: [pricingId], references: [id])
 
-  payment Payment? @relation(fields: [paymentId], references: [id])
+  finalAmount Float? // calculated at booking time, can be overridden for discounts, etc.
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // payment Payment? @relation(fields: [paymentId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([userId])
   @@index([experienceId])
   @@index([date])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Reservation {
+  id           String     @id @default(cuid())
+  date         DateTime
+  startTime    String?
+  seats        Int
+  expiresAt    DateTime
+  experienceId String
+  experience   Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  updatedAt DateTime @updatedAt
+
+  @@index([experienceId, date])
+  @@index([expiresAt])
 }
 
 enum BookingStatus {
@@ -310,13 +353,16 @@ enum BookingStatus {
   CONFIRMED
   CANCELLED
   COMPLETED
+  FAILED
+  EXPIRED
 }
 
 model Payment {
   id String @id @default(cuid())
 
-  amount   Float
-  currency String @default("USD")
+  amount       Float
+  currency     String
+  exchangeRate Float?
 
   method   PaymentMethod
   provider String? // stripe, paypal
@@ -325,11 +371,25 @@ model Payment {
 
   transactionId String?
 
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  paymentType PaymentType @default(FULL)
+
   metadata Json?
 
-  booking Booking?
+  // booking Booking?
 
   createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum PaymentType {
+  FULL
+  PARTIAL
+  REFUND
 }
 
 enum PaymentMethod {
@@ -364,6 +424,7 @@ model Review {
 
   createdAt DateTime @default(now())
 
+  @@unique([userId, experienceId])
   @@index([experienceId])
   @@index([userId])
 }
@@ -434,6 +495,8 @@ model MediaLink {
 
   mediaId String
   media   Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  url String // direct url to access media (can be same as key or different if using CDN)
 
   entityType MediaEntityType
   entityId   String
@@ -522,7 +585,8 @@ model ExperiencePricing {
 
   name String? // Adult, Child, VIP, Private
 
-  currency String @default("USD")
+  currency     String
+  exchangeRate Float?
 
   basePrice Float?
 
@@ -569,4 +633,17 @@ model PricingSlot {
 
   @@index([pricingId])
   @@index([date])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
 }

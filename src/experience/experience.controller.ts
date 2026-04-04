@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
   Req,
   SetMetadata,
   UseGuards,
@@ -50,5 +51,18 @@ export class ExperienceController {
   @Delete('delete/:id')
   async deleteExperience(@Param('id') id: string) {
     return this.experienceService.deleteExperience(id);
+  }
+
+  @Get(':id/availability')
+  getAvailability(
+    @Param('id') id: string,
+    @Query('date') date: string,
+    @Query('participants') participants?: string,
+  ) {
+    return this.experienceService.getAvailableOptions(
+      id,
+      date,
+      Number(participants) || 1,
+    );
   }
 }
