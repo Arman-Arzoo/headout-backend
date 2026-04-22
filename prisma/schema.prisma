@@ -54,16 +54,17 @@ model EmailVerificationRequest {
 //
 
 model Experience {
-  id                 String              @id @default(cuid())
+  id                 String                 @id @default(cuid())
   title              String
-  slug               String              @unique
+  slug               String                 @unique
   description        String
   location           String
   city               String
   country            String
   pricings           ExperiencePricing[]
+  ticketTypes        ExperienceTicketType[]
   duration           String? // e.g., "2 hours"
-  available          Boolean             @default(true)
+  available          Boolean                @default(true)
   cancellationPolicy String
 
   videoUrl String?
@@ -211,8 +212,8 @@ model ExperienceAvailability {
   bookingCapacitySnapshot Int?
 
   reason    String?
-  startTime DateTime?
-  endTime   DateTime?
+  startTime String?
+  endTime   String?
 
   experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
 
@@ -256,6 +257,27 @@ model ExperienceTheme {
   @@unique([experienceId, themeId])
 }
 
+model ExperienceTicketType {
+  id           String  @id @default(cuid())
+  experienceId String
+  pricingId    String?
+  code         String
+  label        String
+  description  String?
+  minAge       Int?
+  maxAge       Int?
+  basePrice    Float
+  active       Boolean @default(true)
+  sortOrder    Int     @default(0)
+
+  experience Experience         @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  pricing    ExperiencePricing? @relation(fields: [pricingId], references: [id], onDelete: SetNull)
+
+  @@unique([experienceId, code])
+  @@index([experienceId])
+  @@index([pricingId])
+}
+
 model VendorProfile {
   id                 String             @id @default(cuid())
   userId             String             @unique
@@ -283,69 +305,147 @@ enum VerificationStatus {
 // ─── BOOKING & PAYMENT MODULE ───────────────────────────────────────
 //
 
+// model Booking {
+//   id           String @id @default(cuid())
+//   userId       String
+//   experienceId String
+
+//   pricingId String?
+
+//   date DateTime
+
+//   startTime String?
+//   endTime   String?
+
+//   participants Int
+//   participantsBreakdown Json
+
+//   pricingType     PricingType?
+//   // pricePerUnit Float
+//   // totalAmount  Float
+//   pricingSnapshot Json // store pricing details at the time of booking
+
+//   currency     String // ISO code
+//   exchangeRate Float?
+
+//   status BookingStatus @default(PENDING)
+
+//   capacityOverride Int?
+
+//   // paymentId String? @unique
+//   payments Payment[]
+
+//   user       User               @relation(fields: [userId], references: [id])
+//   experience Experience         @relation(fields: [experienceId], references: [id])
+//   pricing    ExperiencePricing? @relation(fields: [pricingId], references: [id])
+
+//   finalAmount Float? // calculated at booking time, can be overridden for discounts, etc.
+
+//   // payment Payment? @relation(fields: [paymentId], references: [id])
+
+//   createdAt DateTime  @default(now())
+//   updatedAt DateTime  @updatedAt
+//   deletedAt DateTime?
+
+//   @@index([userId])
+//   @@index([experienceId])
+//   @@index([date])
+//   @@index([status])
+//   @@index([createdAt])
+// }
+
 model Booking {
-  id           String @id @default(cuid())
+  id           String  @id @default(cuid())
   userId       String
   experienceId String
+  pricingId    String?
 
-  pricingId String?
-
-  date DateTime
-
+  date      DateTime
   startTime String?
   endTime   String?
 
   participants Int
-
-  pricingType     PricingType?
-  // pricePerUnit Float
-  // totalAmount  Float
-  pricingSnapshot Json // store pricing details at the time of booking
-
-  currency     String // ISO code
+  currency     String
   exchangeRate Float?
 
   status BookingStatus @default(PENDING)
 
-  capacityOverride Int?
+  pricingType     PricingType?
+  pricingSnapshot Json
+  finalAmount     Float?
 
-  // paymentId String? @unique
-  payments Payment[]
+  reservationId String?       @unique
+  items         BookingItem[]
+  payments      Payment[]
 
   user       User               @relation(fields: [userId], references: [id])
   experience Experience         @relation(fields: [experienceId], references: [id])
   pricing    ExperiencePricing? @relation(fields: [pricingId], references: [id])
 
-  finalAmount Float? // calculated at booking time, can be overridden for discounts, etc.
-
-  // payment Payment? @relation(fields: [paymentId], references: [id])
-
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
-
-  @@index([userId])
-  @@index([experienceId])
-  @@index([date])
-  @@index([status])
-  @@index([createdAt])
 }
 
+model BookingItem {
+  id         String @id @default(cuid())
+  bookingId  String
+  ticketType String
+  quantity   Int
+  unitPrice  Float
+  totalPrice Float
+  meta       Json?
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+}
+
+// model Reservation {
+//   id           String     @id @default(cuid())
+//   date         DateTime
+//   startTime    String?
+//   seats        Int
+//   expiresAt    DateTime
+//   experienceId String
+//   experience   Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+
+//   userId    String?
+//   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+//   updatedAt DateTime @updatedAt
+
+//   @@index([experienceId, date])
+//   @@index([expiresAt])
+// }
+
 model Reservation {
-  id           String     @id @default(cuid())
+  id           String   @id @default(cuid())
   date         DateTime
   startTime    String?
   seats        Int
   expiresAt    DateTime
   experienceId String
-  experience   Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  userId       String?
 
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  pricingId       String?
+  ticketBreakdown Json?
+  unitSnapshot    Json?
+  status          ReservationStatus @default(ACTIVE)
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   updatedAt DateTime @updatedAt
 
   @@index([experienceId, date])
   @@index([expiresAt])
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CONVERTED
+  EXPIRED
+  CANCELLED
 }
 
 enum BookingStatus {
@@ -355,6 +455,8 @@ enum BookingStatus {
   COMPLETED
   FAILED
   EXPIRED
+  RESERVED
+  PAYMENT_PENDING
 }
 
 model Payment {
@@ -606,9 +708,12 @@ model ExperiencePricing {
 
   slots PricingSlot[]
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  bookings  Booking[]
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  bookings    Booking[]
+  ticketTypes ExperienceTicketType[]
+
+  categoryPrices Json
 
   @@index([experienceId])
   @@index([active])
