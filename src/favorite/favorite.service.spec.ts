@@ -7,10 +7,7 @@ describe('FavoriteService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        FavoriteService,
-        { provide: PrismaService, useValue: {} },
-      ],
+      providers: [FavoriteService, { provide: PrismaService, useValue: {} }],
     }).compile();
 
     service = module.get<FavoriteService>(FavoriteService);

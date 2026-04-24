@@ -12,6 +12,7 @@ import { SupportService } from './support.service';
 import { RolesGuard } from 'src/auth/RolesGuard';
 import { Role, TicketStatus } from '@prisma/client';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
+import { AuthenticatedRequest } from 'src/auth/authenticated-request';
 export const Roles = (...roles: Role[]) => SetMetadata('roles', roles);
 
 @Controller('support')
@@ -23,7 +24,7 @@ export class SupportController {
   @Post('create')
   @Roles(Role.USER)
   async createSupportTicket(
-    @Req() req,
+    @Req() req: AuthenticatedRequest,
     @Body('subject') subject: string,
     @Body('message') message: string,
   ) {
@@ -38,7 +39,7 @@ export class SupportController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('tickets')
   @Roles(Role.USER)
-  async getUserSupportTickets(@Req() req) {
+  async getUserSupportTickets(@Req() req: AuthenticatedRequest) {
     return this.supportService.getUserSupportTickets(req.user.id);
   }
 
@@ -50,9 +51,6 @@ export class SupportController {
     @Body('status') status: TicketStatus,
     @Body('ticketId') ticketId: string,
   ) {
-    return this.supportService.updateSupportTicketStatus(
-      ticketId,
-      status as any,
-    );
+    return this.supportService.updateSupportTicketStatus(ticketId, status);
   }
 }

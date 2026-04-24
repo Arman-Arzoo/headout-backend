@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
+import { AuthenticatedRequest } from 'src/auth/authenticated-request';
 import { MediaService } from './media.service';
 import { FieldType, MediaEntityType, MediaSource } from '@prisma/client';
 
@@ -43,7 +44,7 @@ export class MediaController {
   uploadImage(
     @UploadedFile() file: Express.Multer.File,
     @Param('folder') folder: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('source') source?: MediaSource,
     @Query('sourceStockType') sourceStockType?: MediaEntityType,
   ) {
@@ -77,7 +78,7 @@ export class MediaController {
   uploadFile(
     @UploadedFile() file: Express.Multer.File,
     @Param('folder') folder: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('source') source?: MediaSource,
     @Query('sourceStockType') sourceStockType?: MediaEntityType,
   ) {
@@ -103,7 +104,7 @@ export class MediaController {
   // List My Media
   // -------------------------
   @Get('my')
-  listUserMedia(@Req() req: any) {
+  listUserMedia(@Req() req: AuthenticatedRequest) {
     const { id: userId } = req.user;
 
     return this.mediaService.listUserMedia(userId);
@@ -113,7 +114,7 @@ export class MediaController {
   // Get Signed URL (READ)
   // -------------------------
   @Get(':id/url')
-  getMediaUrl(@Param('id') mediaId: string, @Req() req: any) {
+  getMediaUrl(@Param('id') mediaId: string, @Req() req: AuthenticatedRequest) {
     const { id: userId } = req.user;
 
     return this.mediaService.getMediaSignedUrl(mediaId, userId);
@@ -123,7 +124,7 @@ export class MediaController {
   // Delete Media (Soft delete + S3)
   // -------------------------
   @Delete(':id')
-  deleteMedia(@Param('id') mediaId: string, @Req() req: any) {
+  deleteMedia(@Param('id') mediaId: string, @Req() req: AuthenticatedRequest) {
     const { id: userId } = req.user;
 
     return this.mediaService.deleteMedia(userId, mediaId);
@@ -131,7 +132,7 @@ export class MediaController {
 
   @Post('attach')
   attachMedia(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body()
     body: {
       mediaId: string;

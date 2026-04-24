@@ -47,7 +47,10 @@ export class ExperienceController {
 
   @UseGuards(JwtAuthGuard)
   @Post('update/:id')
-  async updateExperience(@Param('id') id: string, @Body() dto: any) {
+  async updateExperience(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateExperienceDto>,
+  ) {
     return this.experienceService.updateExperience(id, dto);
   }
 

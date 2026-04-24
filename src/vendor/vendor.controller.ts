@@ -12,6 +12,7 @@ import {
 import { VendorService } from './vendor.service';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { CreateVendorProfileDto } from './dto/vendor-profile.dto';
+import { AuthenticatedRequest } from 'src/auth/authenticated-request';
 
 @Controller('vendor')
 export class VendorController {
@@ -20,7 +21,10 @@ export class VendorController {
   // create
   @UseGuards(JwtAuthGuard)
   @Post('profile')
-  async createVendorProfile(@Req() req, @Body() dto: CreateVendorProfileDto) {
+  async createVendorProfile(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: CreateVendorProfileDto,
+  ) {
     const userId = req.user.id;
     return this.vendorService.create(userId, dto);
   }
