@@ -540,6 +540,9 @@ export class BookingService {
 
   async createReservation(dto: CreateReservationDto, userId?: string) {
     const bookingDate = new Date(dto.date);
+    if (Number.isNaN(bookingDate.getTime())) {
+      throw new BadRequestException('Invalid booking date');
+    }
 
     return this.prisma.$transaction(async (tx) => {
       const experience = await tx.experience.findFirst({
@@ -568,6 +571,12 @@ export class BookingService {
 
       if (!pricing) {
         throw new NotFoundException('Pricing not found');
+      }
+
+      if (pricing.type === 'HOURLY' && !dto.startTime) {
+        throw new BadRequestException(
+          'startTime is required for hourly reservations',
+        );
       }
 
       if (
@@ -901,6 +910,9 @@ export class BookingService {
       dto;
 
     const bookingDate = new Date(date);
+    if (Number.isNaN(bookingDate.getTime())) {
+      throw new BadRequestException('Invalid booking date');
+    }
 
     return this.prisma.$transaction(async (tx) => {
       const experience = await tx.experience.findFirst({
@@ -929,6 +941,12 @@ export class BookingService {
 
       if (!pricing) {
         throw new NotFoundException('Pricing not found');
+      }
+
+      if (pricing.type === 'HOURLY' && !startTime) {
+        throw new BadRequestException(
+          'startTime is required for hourly bookings',
+        );
       }
 
       if (
@@ -1023,6 +1041,18 @@ export class BookingService {
           null;
 
         if (capacity !== null) {
+          const activeReservations = await tx.reservation.aggregate({
+            _sum: { seats: true },
+            where: {
+              experienceId,
+              pricingId,
+              date: bookingDate,
+              ...(startTime ? { startTime } : {}),
+              status: ReservationStatus.ACTIVE,
+              expiresAt: { gt: new Date() },
+            },
+          });
+
           const existing = await tx.booking.aggregate({
             _sum: { participants: true },
             where: {
@@ -1040,7 +1070,9 @@ export class BookingService {
             },
           });
 
-          const used = existing._sum.participants ?? 0;
+          const used =
+            (activeReservations._sum.seats ?? 0) +
+            (existing._sum.participants ?? 0);
 
           if (used + participants > capacity) {
             throw new BadRequestException('Not enough capacity available');
