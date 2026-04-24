@@ -535,24 +535,25 @@ export class ExperienceService {
                 })),
               });
             }
-            if (dto.ticketTypes?.length) {
-              await tx.experienceTicketType.createMany({
-                data: dto.ticketTypes.map((ticket, index) => ({
-                  experienceId: id,
-                  pricingId: ticket.pricingId ?? null,
-                  code: ticket.code,
-                  label: ticket.label,
-                  description: ticket.description ?? null,
-                  minAge: ticket.minAge ?? null,
-                  maxAge: ticket.maxAge ?? null,
-                  basePrice: ticket.basePrice,
-                  active: ticket.active ?? true,
-                  sortOrder: ticket.sortOrder ?? index,
-                })),
-                skipDuplicates: true,
-              });
-            }
           }
+        }
+
+        if (dto.ticketTypes?.length) {
+          await tx.experienceTicketType.createMany({
+            data: dto.ticketTypes.map((ticket, index) => ({
+              experienceId: id,
+              pricingId: ticket.pricingId ?? null,
+              code: ticket.code,
+              label: ticket.label,
+              description: ticket.description ?? null,
+              minAge: ticket.minAge ?? null,
+              maxAge: ticket.maxAge ?? null,
+              basePrice: ticket.basePrice,
+              active: ticket.active ?? true,
+              sortOrder: ticket.sortOrder ?? index,
+            })),
+            skipDuplicates: true,
+          });
         }
 
         return updated;
@@ -586,6 +587,12 @@ export class ExperienceService {
     participants = 1,
   ) {
     const targetDate = new Date(date);
+    if (Number.isNaN(targetDate.getTime())) {
+      throw new BadRequestException('Invalid date format');
+    }
+    if (participants < 1) {
+      throw new BadRequestException('Participants must be at least 1');
+    }
 
     const [pricings, overrides, reservations, bookings] = await Promise.all([
       this.prisma.experiencePricing.findMany({
