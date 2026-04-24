@@ -40,7 +40,7 @@ export class ReviewController {
   }
 
   // delete review
-    @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete('delete/:reviewId')
   @Roles(Role.USER)
   async deleteReview(@Param('reviewId') reviewId: string, @Req() req) {
@@ -56,9 +56,7 @@ export class ReviewController {
 
   // get review distribution for an experience
   @Get('distribution/:experienceId')
-  async getReviewDistribution(
-    @Param('experienceId') experienceId: string,
-  ) {
+  async getReviewDistribution(@Param('experienceId') experienceId: string) {
     return await this.reviewService.getReviewDistribution(experienceId);
   }
 }

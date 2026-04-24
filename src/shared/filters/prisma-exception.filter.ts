@@ -14,7 +14,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
 
     let message = 'Something went wrong';
-    let status = HttpStatus.BAD_REQUEST;
+    const status = HttpStatus.BAD_REQUEST;
 
     // Handle known Prisma error codes
     if (exception.code === 'P2002') {

@@ -687,7 +687,6 @@
 //   }
 // }
 
-
 import {
   BadRequestException,
   Injectable,
@@ -753,7 +752,7 @@ export class ExperienceService {
         data: {
           title: dto.title,
           slug,
-          
+
           description: dto.description,
           location: dto.location,
           city: dto.city,
@@ -764,7 +763,7 @@ export class ExperienceService {
           duration: dto.duration,
           cancellationPolicy: dto.cancellationPolicy as string,
           available: dto.available ?? true,
-         status: dto.status ?? 'DRAFT',
+          status: dto.status ?? 'DRAFT',
           category: { connect: { id: dto.categoryId } },
           ...(dto.subCategoryId && {
             subCategory: { connect: { id: dto.subCategoryId } },
@@ -889,22 +888,22 @@ export class ExperienceService {
       }
 
       if (dto.ticketTypes?.length) {
-  await tx.experienceTicketType.createMany({
-    data: dto.ticketTypes.map((ticket, index) => ({
-      experienceId: expId,
-      pricingId: ticket.pricingId ?? null,
-      code: ticket.code,
-      label: ticket.label,
-      description: ticket.description ?? null,
-      minAge: ticket.minAge ?? null,
-      maxAge: ticket.maxAge ?? null,
-      basePrice: ticket.basePrice,
-      active: ticket.active ?? true,
-      sortOrder: ticket.sortOrder ?? index,
-    })),
-    skipDuplicates: true,
-  });
-}
+        await tx.experienceTicketType.createMany({
+          data: dto.ticketTypes.map((ticket, index) => ({
+            experienceId: expId,
+            pricingId: ticket.pricingId ?? null,
+            code: ticket.code,
+            label: ticket.label,
+            description: ticket.description ?? null,
+            minAge: ticket.minAge ?? null,
+            maxAge: ticket.maxAge ?? null,
+            basePrice: ticket.basePrice,
+            active: ticket.active ?? true,
+            sortOrder: ticket.sortOrder ?? index,
+          })),
+          skipDuplicates: true,
+        });
+      }
 
       return experience;
     });
@@ -934,9 +933,9 @@ export class ExperienceService {
           select: { id: true },
         },
         ticketTypes: {
-  where: { active: true },
-  orderBy: { sortOrder: 'asc' },
-},
+          where: { active: true },
+          orderBy: { sortOrder: 'asc' },
+        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -985,9 +984,9 @@ export class ExperienceService {
         experienceTicketInfos: { orderBy: { order: 'asc' } },
         experienceBullets: true,
         ticketTypes: {
-  where: { active: true },
-  orderBy: { sortOrder: 'asc' },
-},
+          where: { active: true },
+          orderBy: { sortOrder: 'asc' },
+        },
       },
     });
 
@@ -1031,56 +1030,56 @@ export class ExperienceService {
       throw new NotFoundException('Experience not found');
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const slug = dto.title
-        ? await this.generateUniqueSlug(tx, dto.title, id)
-        : undefined;
+    return this.prisma.$transaction(
+      async (tx) => {
+        const slug = dto.title
+          ? await this.generateUniqueSlug(tx, dto.title, id)
+          : undefined;
 
-      const data: Prisma.ExperienceUpdateInput = {
-        ...(dto.title !== undefined ? { title: dto.title } : {}),
-        ...(dto.description !== undefined
-          ? { description: dto.description }
-          : {}),
-        ...(dto.location !== undefined ? { location: dto.location } : {}),
-        ...(dto.status !== undefined ? { status: dto.status } : {}),
-        ...(dto.city !== undefined ? { city: dto.city } : {}),
-        ...(dto.country !== undefined ? { country: dto.country } : {}),
-        ...(dto.duration !== undefined ? { duration: dto.duration } : {}),
-        ...(dto.available !== undefined ? { available: dto.available } : {}),
-        ...(dto.latitude !== undefined ? { latitude: dto.latitude } : {}),
-        ...(dto.longitude !== undefined ? { longitude: dto.longitude } : {}),
-        ...(dto.address !== undefined ? { address: dto.address } : {}),
-        ...(dto.cancellationPolicy !== undefined
-          ? { cancellationPolicy: dto.cancellationPolicy }
-          : {}),
-          
-          
-        ...(slug !== undefined ? { slug } : {}),
-      };
+        const data: Prisma.ExperienceUpdateInput = {
+          ...(dto.title !== undefined ? { title: dto.title } : {}),
+          ...(dto.description !== undefined
+            ? { description: dto.description }
+            : {}),
+          ...(dto.location !== undefined ? { location: dto.location } : {}),
+          ...(dto.status !== undefined ? { status: dto.status } : {}),
+          ...(dto.city !== undefined ? { city: dto.city } : {}),
+          ...(dto.country !== undefined ? { country: dto.country } : {}),
+          ...(dto.duration !== undefined ? { duration: dto.duration } : {}),
+          ...(dto.available !== undefined ? { available: dto.available } : {}),
+          ...(dto.latitude !== undefined ? { latitude: dto.latitude } : {}),
+          ...(dto.longitude !== undefined ? { longitude: dto.longitude } : {}),
+          ...(dto.address !== undefined ? { address: dto.address } : {}),
+          ...(dto.cancellationPolicy !== undefined
+            ? { cancellationPolicy: dto.cancellationPolicy }
+            : {}),
 
-      if (dto.categoryId) {
-        data.category = { connect: { id: dto.categoryId } };
-      }
+          ...(slug !== undefined ? { slug } : {}),
+        };
 
-      if (dto.subCategoryId !== undefined) {
-        data.subCategory = dto.subCategoryId
-          ? { connect: { id: dto.subCategoryId } }
-          : { disconnect: true };
-      }
+        if (dto.categoryId) {
+          data.category = { connect: { id: dto.categoryId } };
+        }
 
-      
-      const updated = await tx.experience.update({
-        where: { id },
-        data,
-      });
+        if (dto.subCategoryId !== undefined) {
+          data.subCategory = dto.subCategoryId
+            ? { connect: { id: dto.subCategoryId } }
+            : { disconnect: true };
+        }
 
-      await Promise.all(
-        [
+        const updated = await tx.experience.update({
+          where: { id },
+          data,
+        });
+
+        const deleteOps = [
           dto.themeIds !== undefined
             ? tx.experienceTheme.deleteMany({ where: { experienceId: id } })
             : null,
           dto.highlights !== undefined
-            ? tx.experienceHighlight.deleteMany({ where: { experienceId: id } })
+            ? tx.experienceHighlight.deleteMany({
+                where: { experienceId: id },
+              })
             : null,
           dto.experienceBullets !== undefined
             ? tx.experienceBullets.deleteMany({ where: { experienceId: id } })
@@ -1100,149 +1099,155 @@ export class ExperienceService {
             ? tx.experienceInfo.deleteMany({ where: { experienceId: id } })
             : null,
           dto.ticketInfos !== undefined
-            ? tx.experienceTicketInfo.deleteMany({ where: { experienceId: id } })
+            ? tx.experienceTicketInfo.deleteMany({
+                where: { experienceId: id },
+              })
             : null,
           dto.pricings !== undefined
             ? tx.experiencePricing.deleteMany({ where: { experienceId: id } })
             : null,
-            dto.ticketTypes !== undefined
-  ? tx.experienceTicketType.deleteMany({ where: { experienceId: id } })
-  : null,
-        ].filter(Boolean),
-      );
+          dto.ticketTypes !== undefined
+            ? tx.experienceTicketType.deleteMany({
+                where: { experienceId: id },
+              })
+            : null,
+        ].filter((op): op is NonNullable<typeof op> => op !== null);
+        await Promise.all(deleteOps);
 
-      if (dto.themeIds?.length) {
-        await tx.experienceTheme.createMany({
-          data: dto.themeIds.map((themeId) => ({
-            themeId,
-            experienceId: id,
-          })),
-          skipDuplicates: true,
-        });
-      }
-
-      if (dto.highlights?.length) {
-        await tx.experienceHighlight.createMany({
-          data: dto.highlights.map((h, i) => ({
-            ...h,
-            order: i,
-            experienceId: id,
-          })),
-        });
-      }
-
-      if (dto.experienceBullets?.length) {
-        await tx.experienceBullets.createMany({
-          data: dto.experienceBullets.map((text) => ({
-            text,
-            experienceId: id,
-          })),
-        });
-      }
-
-      if (dto.features?.length) {
-        await tx.experienceFeature.createMany({
-          data: dto.features.map((f, i) => ({
-            ...f,
-            order: i,
-            experienceId: id,
-          })),
-        });
-      }
-
-      if (dto.sections?.length) {
-        await tx.experienceSection.createMany({
-          data: dto.sections.map((s, i) => ({
-            ...s,
-            order: i,
-            experienceId: id,
-          })),
-        });
-      }
-
-      if (dto.operatingHours?.length) {
-        await tx.experienceOperatingHour.createMany({
-          data: dto.operatingHours.map((o) => ({
-            ...o,
-            experienceId: id,
-          })),
-        });
-      }
-
-      if (dto.infos?.length) {
-        await tx.experienceInfo.createMany({
-          data: dto.infos.map((info, i) => ({
-            ...info,
-            order: i,
-            experienceId: id,
-          })),
-        });
-      }
-
-      if (dto.ticketInfos?.length) {
-        await tx.experienceTicketInfo.createMany({
-          data: dto.ticketInfos.map((t, i) => ({
-            ...t,
-            order: i,
-            experienceId: id,
-          })),
-        });
-      }
-
-      if (dto.pricings?.length) {
-        for (const pricing of dto.pricings) {
-          const createdPricing = await tx.experiencePricing.create({
-            data: {
+        if (dto.themeIds?.length) {
+          await tx.experienceTheme.createMany({
+            data: dto.themeIds.map((themeId) => ({
+              themeId,
               experienceId: id,
-              type: pricing.type,
-              name: pricing.name || 'default',
-              currency: pricing.currency ?? 'USD',
-              exchangeRate: pricing.exchangeRate,
-              basePrice: pricing.basePrice ?? 0,
-              minParticipants: pricing.minParticipants ?? null,
-              maxParticipants: pricing.maxParticipants ?? null,
-              maxPeople: pricing.maxPeople ?? null,
-              validFrom: pricing.validFrom ?? null,
-              validTo: pricing.validTo ?? null,
-              categoryPrices: pricing.categoryPrices ?? {},
-            },
+            })),
+            skipDuplicates: true,
           });
-
-          if (pricing.slots?.length) {
-            await tx.pricingSlot.createMany({
-              data: pricing.slots.map((slot) => ({
-                pricingId: createdPricing.id,
-                date: slot.date ?? null,
-                dayOfWeek: slot.dayOfWeek ?? null,
-                startTime: slot.startTime ?? null,
-                endTime: slot.endTime ?? null,
-                price: slot.price,
-                capacity: slot.capacity ?? null,
-              })),
-            });
-          }
-          if (dto.ticketTypes?.length) {
-  await tx.experienceTicketType.createMany({
-    data: dto.ticketTypes.map((ticket, index) => ({
-      experienceId: id,
-      pricingId: ticket.pricingId ?? null,
-      code: ticket.code,
-      label: ticket.label,
-      description: ticket.description ?? null,
-      minAge: ticket.minAge ?? null,
-      maxAge: ticket.maxAge ?? null,
-      basePrice: ticket.basePrice,
-      active: ticket.active ?? true,
-      sortOrder: ticket.sortOrder ?? index,
-    })),
-    skipDuplicates: true,
-  });
-}
         }
-      }
 
-      return updated;
-    }, { timeout: 20000 });
+        if (dto.highlights?.length) {
+          await tx.experienceHighlight.createMany({
+            data: dto.highlights.map((h, i) => ({
+              ...h,
+              order: i,
+              experienceId: id,
+            })),
+          });
+        }
+
+        if (dto.experienceBullets?.length) {
+          await tx.experienceBullets.createMany({
+            data: dto.experienceBullets.map((text) => ({
+              text,
+              experienceId: id,
+            })),
+          });
+        }
+
+        if (dto.features?.length) {
+          await tx.experienceFeature.createMany({
+            data: dto.features.map((f, i) => ({
+              ...f,
+              order: i,
+              experienceId: id,
+            })),
+          });
+        }
+
+        if (dto.sections?.length) {
+          await tx.experienceSection.createMany({
+            data: dto.sections.map((s, i) => ({
+              ...s,
+              order: i,
+              experienceId: id,
+            })),
+          });
+        }
+
+        if (dto.operatingHours?.length) {
+          await tx.experienceOperatingHour.createMany({
+            data: dto.operatingHours.map((o) => ({
+              ...o,
+              experienceId: id,
+            })),
+          });
+        }
+
+        if (dto.infos?.length) {
+          await tx.experienceInfo.createMany({
+            data: dto.infos.map((info, i) => ({
+              ...info,
+              order: i,
+              experienceId: id,
+            })),
+          });
+        }
+
+        if (dto.ticketInfos?.length) {
+          await tx.experienceTicketInfo.createMany({
+            data: dto.ticketInfos.map((t, i) => ({
+              ...t,
+              order: i,
+              experienceId: id,
+            })),
+          });
+        }
+
+        if (dto.pricings?.length) {
+          for (const pricing of dto.pricings) {
+            const createdPricing = await tx.experiencePricing.create({
+              data: {
+                experienceId: id,
+                type: pricing.type,
+                name: pricing.name || 'default',
+                currency: pricing.currency ?? 'USD',
+                exchangeRate: pricing.exchangeRate,
+                basePrice: pricing.basePrice ?? 0,
+                minParticipants: pricing.minParticipants ?? null,
+                maxParticipants: pricing.maxParticipants ?? null,
+                maxPeople: pricing.maxPeople ?? null,
+                validFrom: pricing.validFrom ?? null,
+                validTo: pricing.validTo ?? null,
+                categoryPrices: pricing.categoryPrices ?? {},
+              },
+            });
+
+            if (pricing.slots?.length) {
+              await tx.pricingSlot.createMany({
+                data: pricing.slots.map((slot) => ({
+                  pricingId: createdPricing.id,
+                  date: slot.date ?? null,
+                  dayOfWeek: slot.dayOfWeek ?? null,
+                  startTime: slot.startTime ?? null,
+                  endTime: slot.endTime ?? null,
+                  price: slot.price,
+                  capacity: slot.capacity ?? null,
+                })),
+              });
+            }
+            if (dto.ticketTypes?.length) {
+              await tx.experienceTicketType.createMany({
+                data: dto.ticketTypes.map((ticket, index) => ({
+                  experienceId: id,
+                  pricingId: ticket.pricingId ?? null,
+                  code: ticket.code,
+                  label: ticket.label,
+                  description: ticket.description ?? null,
+                  minAge: ticket.minAge ?? null,
+                  maxAge: ticket.maxAge ?? null,
+                  basePrice: ticket.basePrice,
+                  active: ticket.active ?? true,
+                  sortOrder: ticket.sortOrder ?? index,
+                })),
+                skipDuplicates: true,
+              });
+            }
+          }
+        }
+
+        return updated;
+      },
+      { timeout: 20000 },
+    );
   }
 
   async deleteExperience(id: string) {
@@ -1264,176 +1269,173 @@ export class ExperienceService {
     });
   }
 
-async checkAvailability(
-  experienceId: string,
-  date: string,
-  participants = 1,
-) {
-  const targetDate = new Date(date);
+  async checkAvailability(
+    experienceId: string,
+    date: string,
+    participants = 1,
+  ) {
+    const targetDate = new Date(date);
 
-  const [pricings, overrides, reservations, bookings] = await Promise.all([
-    this.prisma.experiencePricing.findMany({
-      where: {
-        experienceId,
-        active: true,
-      },
-      include: {
-        slots: true,
-        ticketTypes: {
-          where: { active: true },
-          orderBy: { sortOrder: 'asc' },
+    const [pricings, overrides, reservations, bookings] = await Promise.all([
+      this.prisma.experiencePricing.findMany({
+        where: {
+          experienceId,
+          active: true,
         },
-      },
-      orderBy: { createdAt: 'asc' },
-    }),
-
-    this.prisma.experienceAvailability.findMany({
-      where: {
-        experienceId,
-        date: targetDate,
-      },
-    }),
-
-    this.prisma.reservation.findMany({
-      where: {
-        experienceId,
-        date: targetDate,
-        status: 'ACTIVE',
-        expiresAt: { gt: new Date() },
-      },
-    }),
-
-    this.prisma.booking.findMany({
-      where: {
-        experienceId,
-        date: targetDate,
-        status: {
-          in: ['CONFIRMED', 'PAYMENT_PENDING', 'RESERVED'],
-        },
-      },
-    }),
-  ]);
-
-  const options = pricings.map((pricing) => {
-    // ===============================
-    // NON-SLOT PRICING
-    // ===============================
-    if (!pricing.slots.length) {
-      const override = overrides.find(
-        (o) => (o.startTime ?? null) === null && (o.endTime ?? null) === null,
-      );
-
-      if (override?.isBlocked) {
-        return {
-          pricing,
-          ticketTypes: pricing.ticketTypes,
-          slots: [],
-          isSoldOut: true,
-        };
-      }
-
-      let capacity =
-        override?.bookingCapacitySnapshot ??
-        pricing.maxPeople ??
-        pricing.maxParticipants ??
-        999;
-
-      const reserved = reservations
-        .filter(
-          (r) =>
-            r.pricingId === pricing.id &&
-            (r.startTime ?? null) === null,
-        )
-        .reduce((sum, r) => sum + r.seats, 0);
-
-      const booked = bookings
-        .filter(
-          (b) =>
-            b.pricingId === pricing.id &&
-            (b.startTime ?? null) === null,
-        )
-        .reduce((sum, b) => sum + b.participants, 0);
-
-      const availableSeats = Math.max(0, capacity - reserved - booked);
-
-      return {
-        pricing,
-        ticketTypes: pricing.ticketTypes,
-        slots: [
-          {
-            startTime: null,
-            endTime: null,
-            price: pricing.basePrice ?? 0,
-            availableSeats,
-            isAvailable: availableSeats >= participants,
+        include: {
+          slots: true,
+          ticketTypes: {
+            where: { active: true },
+            orderBy: { sortOrder: 'asc' },
           },
-        ],
-        isSoldOut: availableSeats < participants,
-      };
-    }
+        },
+        orderBy: { createdAt: 'asc' },
+      }),
 
-    // ===============================
-    // SLOT-BASED PRICING
-    // ===============================
-    const slots = pricing.slots
-      .map((slot) => {
-        let capacity = slot.capacity ?? pricing.maxPeople ?? pricing.maxParticipants ?? 999;
+      this.prisma.experienceAvailability.findMany({
+        where: {
+          experienceId,
+          date: targetDate,
+        },
+      }),
 
+      this.prisma.reservation.findMany({
+        where: {
+          experienceId,
+          date: targetDate,
+          status: 'ACTIVE',
+          expiresAt: { gt: new Date() },
+        },
+      }),
+
+      this.prisma.booking.findMany({
+        where: {
+          experienceId,
+          date: targetDate,
+          status: {
+            in: ['CONFIRMED', 'PAYMENT_PENDING', 'RESERVED'],
+          },
+        },
+      }),
+    ]);
+
+    const reservationSeatsBySlot = reservations.reduce<Record<string, number>>(
+      (acc, reservation) => {
+        const key = `${reservation.pricingId}:${reservation.startTime ?? ''}`;
+        acc[key] = (acc[key] ?? 0) + reservation.seats;
+        return acc;
+      },
+      {},
+    );
+    const bookingSeatsBySlot = bookings.reduce<Record<string, number>>(
+      (acc, booking) => {
+        const key = `${booking.pricingId}:${booking.startTime ?? ''}`;
+        acc[key] = (acc[key] ?? 0) + booking.participants;
+        return acc;
+      },
+      {},
+    );
+
+    const options = pricings.map((pricing) => {
+      // ===============================
+      // NON-SLOT PRICING
+      // ===============================
+      if (!pricing.slots.length) {
         const override = overrides.find(
-          (o) =>
-            (o.startTime ?? null) === (slot.startTime ?? null) &&
-            (o.endTime ?? null) === (slot.endTime ?? null),
+          (o) => (o.startTime ?? null) === null && (o.endTime ?? null) === null,
         );
 
         if (override?.isBlocked) {
-          return null;
+          return {
+            pricing,
+            ticketTypes: pricing.ticketTypes,
+            slots: [],
+            isSoldOut: true,
+          };
         }
 
-        if (override?.bookingCapacitySnapshot != null) {
-          capacity = override.bookingCapacitySnapshot;
-        }
+        const capacity =
+          override?.bookingCapacitySnapshot ??
+          pricing.maxPeople ??
+          pricing.maxParticipants ??
+          999;
 
-        const reserved = reservations
-          .filter(
-            (r) =>
-              r.pricingId === pricing.id &&
-              (r.startTime ?? null) === (slot.startTime ?? null),
-          )
-          .reduce((sum, r) => sum + r.seats, 0);
-
-        const booked = bookings
-          .filter(
-            (b) =>
-              b.pricingId === pricing.id &&
-              (b.startTime ?? null) === (slot.startTime ?? null),
-          )
-          .reduce((sum, b) => sum + b.participants, 0);
+        const noSlotKey = `${pricing.id}:`;
+        const reserved = reservationSeatsBySlot[noSlotKey] ?? 0;
+        const booked = bookingSeatsBySlot[noSlotKey] ?? 0;
 
         const availableSeats = Math.max(0, capacity - reserved - booked);
 
         return {
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          price: slot.price ?? pricing.basePrice ?? 0,
-          availableSeats,
-          isAvailable: availableSeats >= participants,
+          pricing,
+          ticketTypes: pricing.ticketTypes,
+          slots: [
+            {
+              startTime: null,
+              endTime: null,
+              price: pricing.basePrice ?? 0,
+              availableSeats,
+              isAvailable: availableSeats >= participants,
+            },
+          ],
+          isSoldOut: availableSeats < participants,
         };
-      })
-      .filter((slot): slot is NonNullable<typeof slot> => slot !== null);
+      }
 
-    const isSoldOut =
-      slots.length > 0 ? slots.every((s) => !s.isAvailable) : true;
+      // ===============================
+      // SLOT-BASED PRICING
+      // ===============================
+      const slots = pricing.slots
+        .map((slot) => {
+          let capacity =
+            slot.capacity ??
+            pricing.maxPeople ??
+            pricing.maxParticipants ??
+            999;
 
-    return {
-      pricing,
-      ticketTypes: pricing.ticketTypes,
-      slots,
-      isSoldOut,
-    };
-  });
+          const override = overrides.find(
+            (o) =>
+              (o.startTime ?? null) === (slot.startTime ?? null) &&
+              (o.endTime ?? null) === (slot.endTime ?? null),
+          );
 
-  return { options };
-}
+          if (override?.isBlocked) {
+            return null;
+          }
+
+          if (override?.bookingCapacitySnapshot != null) {
+            capacity = override.bookingCapacitySnapshot;
+          }
+
+          const slotKey = `${pricing.id}:${slot.startTime ?? ''}`;
+          const reserved = reservationSeatsBySlot[slotKey] ?? 0;
+          const booked = bookingSeatsBySlot[slotKey] ?? 0;
+
+          const availableSeats = Math.max(0, capacity - reserved - booked);
+
+          return {
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            price: slot.price ?? pricing.basePrice ?? 0,
+            availableSeats,
+            isAvailable: availableSeats >= participants,
+          };
+        })
+        .filter((slot): slot is NonNullable<typeof slot> => slot !== null);
+
+      const isSoldOut =
+        slots.length > 0 ? slots.every((s) => !s.isAvailable) : true;
+
+      return {
+        pricing,
+        ticketTypes: pricing.ticketTypes,
+        slots,
+        isSoldOut,
+      };
+    });
+
+    return { options };
+  }
 
   async getAvailableOptions(
     experienceId: string,

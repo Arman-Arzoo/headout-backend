@@ -1,4 +1,4 @@
-import { IsEmail, IsString ,IsBoolean} from 'class-validator';
+import { IsEmail, IsString, IsBoolean } from 'class-validator';
 
 export class LoginDto {
   @IsEmail()

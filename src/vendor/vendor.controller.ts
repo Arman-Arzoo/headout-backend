@@ -30,7 +30,6 @@ export class VendorController {
   async getAllVendorProfiles() {
     return this.vendorService.findAll();
   }
-  
 
   // get by id
   @UseGuards(JwtAuthGuard)

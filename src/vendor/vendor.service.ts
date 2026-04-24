@@ -8,7 +8,6 @@ export class VendorService {
 
   //   create
   async create(userId: string, dto: CreateVendorProfileDto) {
-
     // check user ROle is VENDOR
     const user = await this.prisma.user.findUnique({
       where: {

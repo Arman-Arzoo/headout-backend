@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
+import { AuthenticatedRequest } from 'src/auth/authenticated-request';
 
 import { BookingStatus, Role } from '@prisma/client';
 import { CreateBookingDto } from './dto/createBooking.dto';
@@ -27,7 +28,10 @@ export class BookingController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.USER)
   @Post('create')
-  async createBooking(@Body() dto: CreateBookingDto, @Req() req) {
+  async createBooking(
+    @Body() dto: CreateBookingDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
     const userId = req.user.id;
 
     return this.bookingService.createBooking(dto, userId);
@@ -38,7 +42,7 @@ export class BookingController {
   // ────────────────────────────────────────────────
   @UseGuards(JwtAuthGuard)
   @Get('user-bookings')
-  async getUserBookings(@Req() req) {
+  async getUserBookings(@Req() req: AuthenticatedRequest) {
     const userId = req.user.id;
     return this.bookingService.getUserBookings(userId);
   }
@@ -49,7 +53,7 @@ export class BookingController {
   // ────────────────────────────────────────────────
   @UseGuards(JwtAuthGuard)
   @Get('vendor-bookings')
-  async getVendorBookings(@Req() req) {
+  async getVendorBookings(@Req() req: AuthenticatedRequest) {
     const userId = req.user.id;
     return this.bookingService.getVendorBookings(userId);
   }

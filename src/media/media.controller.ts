@@ -113,11 +113,7 @@ export class MediaController {
   // Get Signed URL (READ)
   // -------------------------
   @Get(':id/url')
-  getMediaUrl(
-    @Param('id') mediaId: string,
-    @Req() req: any,
-
-  ) {
+  getMediaUrl(@Param('id') mediaId: string, @Req() req: any) {
     const { id: userId } = req.user;
 
     return this.mediaService.getMediaSignedUrl(mediaId, userId);
@@ -127,10 +123,7 @@ export class MediaController {
   // Delete Media (Soft delete + S3)
   // -------------------------
   @Delete(':id')
-  deleteMedia(
-    @Param('id') mediaId: string,
-    @Req() req: any,
-  ) {
+  deleteMedia(@Param('id') mediaId: string, @Req() req: any) {
     const { id: userId } = req.user;
 
     return this.mediaService.deleteMedia(userId, mediaId);
@@ -165,9 +158,7 @@ export class MediaController {
   // Stock  Listing
   // -------------------------
   @Get('stock/:type')
-  listStock(
-    @Param('type') type: MediaEntityType,
-  ) {
+  listStock(@Param('type') type: MediaEntityType) {
     return this.mediaService.getStockMedia(type);
   }
 }

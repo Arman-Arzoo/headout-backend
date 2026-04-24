@@ -95,6 +95,4 @@ export class S3Service {
       throw new InternalServerErrorException('Failed to delete file from S3');
     }
   }
-
-  
 }

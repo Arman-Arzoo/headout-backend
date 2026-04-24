@@ -16,6 +16,6 @@ import { MediaResolverService } from './mediaResolver.service';
   ],
   controllers: [MediaController],
   providers: [MediaService, PrismaService, S3Service, MediaResolverService],
-   exports: [MediaResolverService, S3Service],
+  exports: [MediaResolverService, S3Service],
 })
 export class MediaModule {}

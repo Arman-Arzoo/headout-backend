@@ -4,7 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import bcrypt from 'bcrypt';
 import { MailerService } from '../mailer/mailer.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@prisma/client';
@@ -18,7 +18,7 @@ export class AuthService {
   ) {}
 
   private generateToken(
-    user: { id: string; email: string, role: Role; },
+    user: { id: string; email: string; role: Role },
     rememberMe: boolean,
   ) {
     const payload = { sub: user.id, email: user.email, role: user.role };
@@ -59,7 +59,8 @@ export class AuthService {
     const token = this.generateToken(user, rememberMe);
 
     return {
-      ...token, user,
+      ...token,
+      user,
     };
   }
 
@@ -168,12 +169,11 @@ export class AuthService {
   }
 
   async getUserById(id: string) {
-    if(!id){
-      throw new BadRequestException("userId is missing")
+    if (!id) {
+      throw new BadRequestException('userId is missing');
     }
     const user = await this.prisma.user.findUnique({
       where: { id },
-    
     });
 
     if (!user) {

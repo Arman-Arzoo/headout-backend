@@ -1,5 +1,5 @@
 import { VerificationStatus } from '@prisma/client';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class CreateVendorProfileDto {
   @IsString()
@@ -14,7 +14,7 @@ export class CreateVendorProfileDto {
   @IsString()
   @IsOptional()
   address?: string;
-  
+
   @IsOptional()
   verified?: VerificationStatus;
 }

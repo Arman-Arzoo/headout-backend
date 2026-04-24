@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Post,
-  Param,
   Get,
   UseGuards,
   Req,
@@ -13,9 +12,9 @@ import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from './jwt.guard';
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthenticatedRequest } from './authenticated-request';
 
 @Controller('auth')
 export class AuthController {
@@ -63,7 +62,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('user')
-  getUserById(@Req() req: any) {
+  getUserById(@Req() req: AuthenticatedRequest) {
     const userId = req.user?.id;
     return this.authService.getUserById(userId);
   }
@@ -72,4 +71,3 @@ export class AuthController {
     return this.authService.getUsers();
   }
 }
-

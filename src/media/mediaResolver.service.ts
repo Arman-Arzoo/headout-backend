@@ -1,10 +1,7 @@
-
-
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { S3Service } from './s3.service';
 import { FieldType, Media, MediaEntityType } from '@prisma/client';
-
 
 @Injectable()
 export class MediaResolverService {
@@ -64,7 +61,6 @@ export class MediaResolverService {
 
     const links = await this.prisma.mediaLink.findMany({
       where: {
-        
         entityType,
         field,
         entityId: { in: entityIds },
@@ -93,7 +89,6 @@ export class MediaResolverService {
   /* -------------------- MANY ENTITIES → MANY MEDIA -------------------------- */
 
   async resolveManyForManyEntities(
-
     entityType: MediaEntityType,
     entityIds: string[],
     field: FieldType,
@@ -165,26 +160,21 @@ export class MediaResolverService {
       links
         .filter((l) => l.media)
         .map(async (link) => ({
-          mediaId: link.media!.id,
-          mediaDetail: link.media!,
-          url: await this.getSignedUrlCached(link.media!.key, urlCache),
+          mediaId: link.media.id,
+          mediaDetail: link.media,
+          url: await this.getSignedUrlCached(link.media.key, urlCache),
         })),
     );
   }
 
   /* ---------------------------- STOCK MEDIA -------------------------------- */
 
-  async resolveStockMany(
-
-    mediaIds: string[],
-    sourceStockType: MediaEntityType,
-  ) {
+  async resolveStockMany(mediaIds: string[], sourceStockType: MediaEntityType) {
     if (!mediaIds.length)
       return new Map<string, { mediaId: string; url: string }>();
 
     const media = await this.prisma.media.findMany({
       where: {
-        
         source: 'STOCK',
         sourceStockType,
         deletedAt: null,

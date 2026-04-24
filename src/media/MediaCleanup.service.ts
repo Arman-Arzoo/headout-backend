@@ -10,10 +10,7 @@ export class MediaCleanupService {
     private s3Service: S3Service,
   ) {}
 
-  async deleteEntityMedia(
-    entityType: MediaEntityType,
-    entityIds: string[],
-  ) {
+  async deleteEntityMedia(entityType: MediaEntityType, entityIds: string[]) {
     if (!entityIds?.length) return;
 
     /**

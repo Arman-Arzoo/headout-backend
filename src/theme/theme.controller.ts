@@ -12,7 +12,6 @@ import { CreateTabDto } from './dto/create-tab.dto';
 import { CreateThemeDto } from './dto/create-theme.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
 
-
 @Controller('themes')
 export class ThemeController {
   constructor(private readonly themeService: ThemeService) {}

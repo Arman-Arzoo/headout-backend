@@ -29,7 +29,7 @@ import { CategoryModule } from './category/category.module';
     SupportModule,
     MediaModule,
     ThemeModule,
-    CategoryModule
+    CategoryModule,
   ],
 })
 export class AppModule {}

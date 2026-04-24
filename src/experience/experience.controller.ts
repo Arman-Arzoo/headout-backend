@@ -14,6 +14,7 @@ import { ExperienceService } from './experience.service';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { CreateExperienceDto } from './experience.dto';
 import { RolesGuard } from 'src/auth/RolesGuard';
+import { AuthenticatedRequest } from 'src/auth/authenticated-request';
 
 import { Role } from '@prisma/client';
 
@@ -26,7 +27,10 @@ export class ExperienceController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.VENDOR)
   @Post('create')
-  async createExperience(@Body() dto: CreateExperienceDto, @Req() req) {
+  async createExperience(
+    @Body() dto: CreateExperienceDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
     const userId = req.user.id;
 
     return this.experienceService.createExperience(dto, userId);

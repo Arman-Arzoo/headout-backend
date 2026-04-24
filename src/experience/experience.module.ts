@@ -6,8 +6,8 @@ import { MediaResolverService } from 'src/media/mediaResolver.service';
 import { MediaModule } from 'src/media/media.module';
 
 @Module({
-  imports:[MediaModule],
+  imports: [MediaModule],
   controllers: [ExperienceController],
-  providers: [ExperienceService, PrismaService,MediaResolverService ]
+  providers: [ExperienceService, PrismaService, MediaResolverService],
 })
 export class ExperienceModule {}

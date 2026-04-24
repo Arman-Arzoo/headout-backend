@@ -190,7 +190,7 @@ export class MediaService {
       return await this.prisma.mediaLink.create({
         data: {
           mediaId,
-          url: await this.s3Service.getSignedUrl(media.key),  
+          url: await this.s3Service.getSignedUrl(media.key),
           entityType,
           entityId,
           field,
