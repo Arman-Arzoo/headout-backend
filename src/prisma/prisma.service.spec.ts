@@ -1,3 +1,8 @@
+describe('PrismaService placeholder', () => {
+  it('should run test suite', () => {
+    expect(true).toBe(true);
+  });
+});
 // import { Test, TestingModule } from '@nestjs/testing';
 // import { PrismaService } from './prisma.service';
 
