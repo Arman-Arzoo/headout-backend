@@ -45,6 +45,11 @@ export class ExperienceController {
     return this.experienceService.getExperienceBySlug(slug);
   }
 
+   @Get('get/:id')
+  async getExperienceById(@Param('id') id: string) {
+    return this.experienceService.getExperienceById(id);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('update/:id')
   async updateExperience(

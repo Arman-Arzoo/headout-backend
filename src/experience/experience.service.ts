@@ -331,6 +331,70 @@ export class ExperienceService {
     };
   }
 
+   async getExperienceById(id: string) {
+    const experience = await this.prisma.experience.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+      include: {
+        vendor: true,
+        category: true,
+        subCategory: {
+          include: { category: true },
+        },
+        pricings: {
+          where: { active: true },
+          include: { slots: true },
+          orderBy: { createdAt: 'asc' },
+        },
+        themes: {
+          include: { theme: true },
+        },
+        experienceHighlights: { orderBy: { order: 'asc' } },
+        experienceFeatures: { orderBy: { order: 'asc' } },
+        experienceSections: { orderBy: { order: 'asc' } },
+        experienceOperatingHours: { orderBy: { dayOfWeek: 'asc' } },
+        experienceInfos: { orderBy: { order: 'asc' } },
+        experienceTicketInfos: { orderBy: { order: 'asc' } },
+        experienceBullets: true,
+        ticketTypes: {
+          where: { active: true },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+    });
+
+    if (!experience) {
+      throw new NotFoundException('Experience not found');
+    }
+
+    const [icon, gallery, attachments] = await Promise.all([
+      this.mediaResolver.resolveSingle(
+        MediaEntityType.EXPERIENCE,
+        experience.id,
+        FieldType.ICON,
+      ),
+      this.mediaResolver.resolveManyForSingleEntity(
+        MediaEntityType.EXPERIENCE,
+        experience.id,
+        FieldType.GALLERY,
+      ),
+      this.mediaResolver.resolveManyForSingleEntity(
+        MediaEntityType.EXPERIENCE,
+        experience.id,
+        FieldType.ATTACHMENT,
+      ),
+    ]);
+
+    return {
+      ...experience,
+      icon,
+      gallery,
+      attachments,
+    };
+  }
+
   async updateExperience(id: string, dto: Partial<CreateExperienceDto>) {
     const exists = await this.prisma.experience.findUnique({
       where: { id },
